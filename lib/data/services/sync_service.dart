@@ -140,6 +140,7 @@ class SyncService {
         'gradient_end':
             (r['gradient_end'] ?? '2F74CC').toString().replaceAll('#', ''),
         'thumbnail_url': r['thumbnail_url'] ?? '',
+        'categories': r['categories'] ?? '',
       };
 
   static Map<String, dynamic> _sanitizeDish(Map<String, dynamic> r) => {

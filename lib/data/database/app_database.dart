@@ -18,7 +18,7 @@ class AppDatabase {
 
     return openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await _createTables(db);
         await DatabaseSeeder.seed(db);
@@ -29,9 +29,12 @@ class AppDatabase {
               'ALTER TABLE cuisines ADD COLUMN thumbnail_url TEXT NOT NULL DEFAULT ""');
         }
         if (oldVersion < 3) {
-          // Update Indian cuisine gradient from orange to blue
           await db.execute(
               "UPDATE cuisines SET gradient_start='4A90E2', gradient_end='2F74CC' WHERE id=1");
+        }
+        if (oldVersion < 4) {
+          await db.execute(
+              'ALTER TABLE cuisines ADD COLUMN categories TEXT NOT NULL DEFAULT ""');
         }
       },
     );
@@ -47,7 +50,8 @@ class AppDatabase {
         description     TEXT    NOT NULL,
         gradient_start  TEXT    NOT NULL,
         gradient_end    TEXT    NOT NULL,
-        thumbnail_url   TEXT    NOT NULL DEFAULT ""
+        thumbnail_url   TEXT    NOT NULL DEFAULT "",
+        categories      TEXT    NOT NULL DEFAULT ""
       )
     ''');
 

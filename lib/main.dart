@@ -47,7 +47,7 @@ class RecipeQuestApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<CuisineRepository>(create: (_) => CuisineRepository()),
-        Provider<FavoritesRepository>(create: (_) => FavoritesRepository()),
+        ChangeNotifierProvider<FavoritesRepository>(create: (_) => FavoritesRepository()),
 
         // Shared singleton — notifies HomeViewModel when preferences change
         ChangeNotifierProvider<PreferenceRepository>(
