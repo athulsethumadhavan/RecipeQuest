@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- In-App Purchase: required for StoreKit to work in release builds -->
+    <key>com.apple.developer.in-app-payments</key>
+    <array>
+        <!-- Add your App Store Connect In-App Purchase product IDs here if needed -->
+    </array>
+
+    <!-- Associated Domains: enables Universal Links / deep linking          -->
+    <!-- Replace yourdomain.com with your actual domain if you use them      -->
+    <!-- <key>com.apple.developer.associated-domains</key>                   -->
+    <!-- <array>                                                              -->
+    <!--     <string>applinks:yourdomain.com</string>                        -->
+    <!-- </array>                                                             -->
+
+    <!-- Push Notifications (add later when you implement Firebase Messaging) -->
+    <!-- <key>aps-environment</key>                                          -->
+    <!-- <string>development</string>   ← change to 'production' for release -->
+</dict>
+</plist>
