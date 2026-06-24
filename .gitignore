@@ -6,8 +6,18 @@
 *.swp
 .buildlog/
 .history
+.DS_Store
+.atom/
+.build/
+.svn/
+.swiftpm/
+migrate_working_dir/
 
-
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
 
 # Flutter repo-specific
 /bin/cache/
@@ -39,6 +49,7 @@ analysis_benchmark.json
 **/generated_plugin_registrant.dart
 .packages
 .pub-preload-cache/
+.pub-cache/
 .pub/
 build/
 flutter_*.png
@@ -109,6 +120,7 @@ coverage/
 
 # Symbols
 app.*.symbols
+app.*.map.json
 
 # Exceptions to above rules.
 !**/ios/**/default.mode1v3
