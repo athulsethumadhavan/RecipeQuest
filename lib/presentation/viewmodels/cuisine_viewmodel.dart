@@ -1,0 +1,40 @@
+import '../../data/models/cuisine_model.dart';
+import '../../data/models/dish_model.dart';
+import '../../data/repositories/cuisine_repository.dart';
+import 'base_viewmodel.dart';
+
+class CuisineViewModel extends BaseViewModel {
+  final CuisineRepository _repository;
+
+  CuisineViewModel({CuisineRepository? repository})
+      : _repository = repository ?? CuisineRepository();
+
+  List<Cuisine> _cuisines = [];
+  List<Dish> _dishes = [];
+  Cuisine? _selectedCuisine;
+
+  List<Cuisine> get cuisines => _cuisines;
+  List<Dish> get dishes => _dishes;
+  Cuisine? get selectedCuisine => _selectedCuisine;
+
+  Future<void> loadCuisines() async {
+    setLoading();
+    try {
+      _cuisines = await _repository.getCuisines();
+      setSuccess();
+    } catch (e) {
+      setError(e.toString());
+    }
+  }
+
+  Future<void> loadDishesByCuisine(Cuisine cuisine) async {
+    _selectedCuisine = cuisine;
+    setLoading();
+    try {
+      _dishes = await _repository.getDishesByCuisine(cuisine.id);
+      setSuccess();
+    } catch (e) {
+      setError(e.toString());
+    }
+  }
+}
