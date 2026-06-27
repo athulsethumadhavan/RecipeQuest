@@ -76,7 +76,7 @@ class RecipeCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          dish.category,
+                          dish.primaryCategory,
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: AppColors.primary,

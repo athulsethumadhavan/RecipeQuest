@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/models/cuisine_model.dart';
 import '../../../data/repositories/cuisine_repository.dart';
-import '../../../data/services/sync_service.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -44,7 +44,7 @@ class _AdminScreenState extends State<AdminScreen>
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white54,
           tabs: const [
-            Tab(text: 'Sync'),
+            Tab(text: 'Database'),
             Tab(text: 'Add Cuisine'),
             Tab(text: 'Add Dish'),
           ],
@@ -53,7 +53,7 @@ class _AdminScreenState extends State<AdminScreen>
       body: TabBarView(
         controller: _tabs,
         children: const [
-          _SyncTab(),
+          _DatabaseTab(),
           _AddCuisineTab(),
           _AddDishTab(),
         ],
@@ -62,40 +62,44 @@ class _AdminScreenState extends State<AdminScreen>
   }
 }
 
-// ── Sync Status Tab ───────────────────────────────────────────────────────────
+// ── Database Stats Tab ────────────────────────────────────────────────────────
 
-class _SyncTab extends StatefulWidget {
-  const _SyncTab();
+class _DatabaseTab extends StatefulWidget {
+  const _DatabaseTab();
 
   @override
-  State<_SyncTab> createState() => _SyncTabState();
+  State<_DatabaseTab> createState() => _DatabaseTabState();
 }
 
-class _SyncTabState extends State<_SyncTab> {
-  SyncResult? _result;
-  bool _syncing = false;
-  int _localCuisines = 0;
-  int _localDishes = 0;
+class _DatabaseTabState extends State<_DatabaseTab> {
+  int _cuisines = 0;
+  int _dishes = 0;
+  int _details = 0;
+  int _categories = 0;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _result = SyncService.lastResult;
-    _loadLocalCounts();
+    _loadCounts();
   }
 
-  Future<void> _loadLocalCounts() async {
+  Future<void> _loadCounts() async {
+    setState(() => _loading = true);
     final db = await AppDatabase.database;
     final c = (await db.rawQuery('SELECT COUNT(*) as n FROM cuisines')).first['n'] as int;
     final d = (await db.rawQuery('SELECT COUNT(*) as n FROM dishes')).first['n'] as int;
-    if (mounted) setState(() { _localCuisines = c; _localDishes = d; });
-  }
-
-  Future<void> _syncNow() async {
-    setState(() => _syncing = true);
-    final result = await SyncService.syncWithResult();
-    await _loadLocalCounts();
-    if (mounted) setState(() { _result = result; _syncing = false; });
+    final det = (await db.rawQuery('SELECT COUNT(*) as n FROM dish_details')).first['n'] as int;
+    final cat = (await db.rawQuery('SELECT COUNT(*) as n FROM categories')).first['n'] as int;
+    if (mounted) {
+      setState(() {
+        _cuisines = c;
+        _dishes = d;
+        _details = det;
+        _categories = cat;
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -105,147 +109,29 @@ class _SyncTabState extends State<_SyncTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Local DB counts
           _Card(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Local Database',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                const SizedBox(height: 12),
-                _Row('Cuisines in SQLite', '$_localCuisines'),
-                _Row('Dishes in SQLite', '$_localDishes'),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Last sync result
-          if (_result != null)
-            _Card(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        _result!.success
-                            ? Icons.check_circle_rounded
-                            : Icons.error_rounded,
-                        color: _result!.success ? AppColors.success : AppColors.error,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _result!.success ? 'Last Sync: Success' : 'Last Sync: Failed',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: _result!.success ? AppColors.success : AppColors.error,
-                        ),
-                      ),
+                      const Text('Local SQLite Database',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                      const SizedBox(height: 12),
+                      _Row('Cuisines', '$_cuisines'),
+                      _Row('Dishes', '$_dishes'),
+                      _Row('Dish Details', '$_details'),
+                      _Row('Categories', '$_categories'),
                     ],
                   ),
-                  if (_result!.success) ...[
-                    const SizedBox(height: 12),
-                    _Row('Cuisines from Supabase', '${_result!.cuisinesFetched}'),
-                    _Row('Dishes from Supabase', '${_result!.dishesFetched}'),
-                    _Row('Details from Supabase', '${_result!.detailsFetched}'),
-                    if (_result!.cuisinesFetched == 0)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.orange.shade200),
-                          ),
-                          child: const Text(
-                            '⚠️ Supabase returned 0 cuisines.\n'
-                            'Check:\n'
-                            '• RLS policies (public read must be enabled)\n'
-                            '• Supabase URL & anon key in supabase_config.dart\n'
-                            '• That cuisines exist in the Supabase table',
-                            style: TextStyle(fontSize: 12, height: 1.5),
-                          ),
-                        ),
-                      ),
-                  ],
-                  if (_result!.error != null) ...[
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.shade200),
-                      ),
-                      child: SelectableText(
-                        _result!.error!,
-                        style: const TextStyle(
-                            fontSize: 12, fontFamily: 'monospace', height: 1.4),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-          if (_result == null)
-            _Card(
-              child: Text('No sync result yet.',
-                  style: TextStyle(color: AppColors.textSecondary)),
-            ),
-
+          ),
           const SizedBox(height: 20),
-
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _syncing ? null : _syncNow,
-              icon: _syncing
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.sync_rounded),
-              label: Text(_syncing ? 'Syncing…' : 'Sync Now'),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // RLS hint
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Supabase RLS Setup',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                SizedBox(height: 8),
-                SelectableText(
-                  'Run this SQL in Supabase → SQL Editor:\n\n'
-                  'alter table cuisines enable row level security;\n'
-                  'alter table dishes enable row level security;\n'
-                  'alter table dish_details enable row level security;\n\n'
-                  'create policy "public read cuisines"\n'
-                  '  on cuisines for select using (true);\n\n'
-                  'create policy "public read dishes"\n'
-                  '  on dishes for select using (true);\n\n'
-                  'create policy "public read dish_details"\n'
-                  '  on dish_details for select using (true);',
-                  style: TextStyle(fontSize: 11, fontFamily: 'monospace', height: 1.5),
-                ),
-              ],
+              onPressed: _loading ? null : _loadCounts,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Refresh'),
             ),
           ),
         ],
@@ -291,10 +177,13 @@ class _Row extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          Text(label,
+              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
           Text(value,
               style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary)),
         ],
       ),
     );
@@ -322,7 +211,14 @@ class _AddCuisineTabState extends State<_AddCuisineTab> {
 
   @override
   void dispose() {
-    for (final c in [_name, _flag, _description, _thumbnailUrl, _gradientStart, _gradientEnd]) {
+    for (final c in [
+      _name,
+      _flag,
+      _description,
+      _thumbnailUrl,
+      _gradientStart,
+      _gradientEnd
+    ]) {
       c.dispose();
     }
     super.dispose();
@@ -355,7 +251,8 @@ class _AddCuisineTabState extends State<_AddCuisineTab> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+              content: Text('Error: $e'), backgroundColor: AppColors.error),
         );
       }
     } finally {
@@ -372,18 +269,41 @@ class _AddCuisineTabState extends State<_AddCuisineTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Field(controller: _name, label: 'Cuisine Name', hint: 'e.g. Mexican', required: true),
-            _Field(controller: _flag, label: 'Flag Emoji', hint: 'e.g. 🇲🇽', required: true),
-            _Field(controller: _description, label: 'Description', hint: 'Short description...', maxLines: 3, required: true),
-            _Field(controller: _thumbnailUrl, label: 'Thumbnail URL', hint: 'https://images.unsplash.com/...', required: true),
+            _Field(
+                controller: _name,
+                label: 'Cuisine Name',
+                hint: 'e.g. Mexican',
+                required: true),
+            _Field(
+                controller: _flag,
+                label: 'Flag Emoji',
+                hint: 'e.g. 🇲🇽',
+                required: true),
+            _Field(
+                controller: _description,
+                label: 'Description',
+                hint: 'Short description...',
+                maxLines: 3,
+                required: true),
+            _Field(
+                controller: _thumbnailUrl,
+                label: 'Thumbnail URL',
+                hint: 'https://images.unsplash.com/...',
+                required: true),
             Row(
               children: [
                 Expanded(
-                  child: _Field(controller: _gradientStart, label: 'Gradient Start (hex)', hint: '4A90E2'),
+                  child: _Field(
+                      controller: _gradientStart,
+                      label: 'Gradient Start (hex)',
+                      hint: '4A90E2'),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _Field(controller: _gradientEnd, label: 'Gradient End (hex)', hint: '2F74CC'),
+                  child: _Field(
+                      controller: _gradientEnd,
+                      label: 'Gradient End (hex)',
+                      hint: '2F74CC'),
                 ),
               ],
             ),
@@ -396,7 +316,8 @@ class _AddCuisineTabState extends State<_AddCuisineTab> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
                       )
                     : const Text('Save Cuisine'),
               ),
@@ -443,7 +364,11 @@ class _AddDishTabState extends State<_AddDishTab> {
   Future<void> _loadCuisines() async {
     try {
       final list = await CuisineRepository().getCuisines();
-      if (mounted) setState(() { _cuisines = list; _loadingCuisines = false; });
+      if (mounted)
+        setState(() {
+          _cuisines = list;
+          _loadingCuisines = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _loadingCuisines = false);
     }
@@ -468,7 +393,15 @@ class _AddDishTabState extends State<_AddDishTab> {
 
   @override
   void dispose() {
-    for (final c in [_name, _thumbnailUrl, _category, _shortDesc, _fullDesc, _preparation, _videoUrl]) {
+    for (final c in [
+      _name,
+      _thumbnailUrl,
+      _category,
+      _shortDesc,
+      _fullDesc,
+      _preparation,
+      _videoUrl
+    ]) {
       c.dispose();
     }
     for (final row in _ingredients) {
@@ -482,7 +415,9 @@ class _AddDishTabState extends State<_AddDishTab> {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCuisineId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a cuisine'), backgroundColor: AppColors.error),
+        const SnackBar(
+            content: Text('Please select a cuisine'),
+            backgroundColor: AppColors.error),
       );
       return;
     }
@@ -494,9 +429,24 @@ class _AddDishTabState extends State<_AddDishTab> {
         'cuisine_id': _selectedCuisineId,
         'name': _name.text.trim(),
         'thumbnail_url': _thumbnailUrl.text.trim(),
-        'category': _category.text.trim(),
         'short_description': _shortDesc.text.trim(),
       });
+
+      // Link the category in the normalised table
+      final categoryName = _category.text.trim();
+      if (categoryName.isNotEmpty) {
+        await db.insert('categories', {'name': categoryName},
+            conflictAlgorithm: ConflictAlgorithm.ignore);
+        final catRows = await db.query('categories',
+            where: 'name = ?', whereArgs: [categoryName], limit: 1);
+        if (catRows.isNotEmpty) {
+          final categoryId = catRows.first['id'] as int;
+          await db.insert(
+              'dish_categories',
+              {'dish_id': dishId, 'category_id': categoryId},
+              conflictAlgorithm: ConflictAlgorithm.ignore);
+        }
+      }
 
       final ingredientsJson = _ingredients
           .where((r) => r['name']!.text.trim().isNotEmpty)
@@ -511,7 +461,8 @@ class _AddDishTabState extends State<_AddDishTab> {
         'full_description': _fullDesc.text.trim(),
         'ingredients': jsonEncode(ingredientsJson),
         'preparation': _preparation.text.trim(),
-        'video_url': _videoUrl.text.trim().isEmpty ? null : _videoUrl.text.trim(),
+        'video_url':
+            _videoUrl.text.trim().isEmpty ? null : _videoUrl.text.trim(),
       });
 
       _formKey.currentState!.reset();
@@ -527,13 +478,16 @@ class _AddDishTabState extends State<_AddDishTab> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Dish added!'), backgroundColor: AppColors.success),
+          const SnackBar(
+              content: Text('✅ Dish added!'),
+              backgroundColor: AppColors.success),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+              content: Text('Error: $e'), backgroundColor: AppColors.error),
         );
       }
     } finally {
@@ -552,7 +506,8 @@ class _AddDishTabState extends State<_AddDishTab> {
           children: [
             _SectionLabel('Cuisine'),
             _loadingCuisines
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary))
                 : DropdownButtonFormField<int>(
                     value: _selectedCuisineId,
                     decoration: _inputDecoration('Select cuisine'),
@@ -564,13 +519,32 @@ class _AddDishTabState extends State<_AddDishTab> {
                         .toList(),
                     onChanged: (v) => setState(() => _selectedCuisineId = v),
                   ),
-
-            _Field(controller: _name, label: 'Dish Name', hint: 'e.g. Tacos al Pastor', required: true),
-            _Field(controller: _thumbnailUrl, label: 'Thumbnail URL', hint: 'https://images.unsplash.com/...', required: true),
-            _Field(controller: _category, label: 'Category', hint: 'e.g. Street Food', required: true),
-            _Field(controller: _shortDesc, label: 'Short Description', hint: 'One-liner summary...', required: true),
-            _Field(controller: _fullDesc, label: 'Full Description', hint: 'Detailed write-up...', maxLines: 4, required: true),
-
+            _Field(
+                controller: _name,
+                label: 'Dish Name',
+                hint: 'e.g. Tacos al Pastor',
+                required: true),
+            _Field(
+                controller: _thumbnailUrl,
+                label: 'Thumbnail URL',
+                hint: 'https://images.unsplash.com/...',
+                required: true),
+            _Field(
+                controller: _category,
+                label: 'Category',
+                hint: 'e.g. Street Food',
+                required: true),
+            _Field(
+                controller: _shortDesc,
+                label: 'Short Description',
+                hint: 'One-liner summary...',
+                required: true),
+            _Field(
+                controller: _fullDesc,
+                label: 'Full Description',
+                hint: 'Detailed write-up...',
+                maxLines: 4,
+                required: true),
             _SectionLabel('Ingredients'),
             ..._ingredients.asMap().entries.map((entry) {
               final i = entry.key;
@@ -595,8 +569,11 @@ class _AddDishTabState extends State<_AddDishTab> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, color: AppColors.error),
-                      onPressed: _ingredients.length > 1 ? () => _removeIngredient(i) : null,
+                      icon: const Icon(Icons.remove_circle_outline,
+                          color: AppColors.error),
+                      onPressed: _ingredients.length > 1
+                          ? () => _removeIngredient(i)
+                          : null,
                     ),
                   ],
                 ),
@@ -604,10 +581,11 @@ class _AddDishTabState extends State<_AddDishTab> {
             }),
             TextButton.icon(
               onPressed: _addIngredientRow,
-              icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
-              label: const Text('Add Ingredient', style: TextStyle(color: AppColors.primary)),
+              icon: const Icon(Icons.add_circle_outline,
+                  color: AppColors.primary),
+              label: const Text('Add Ingredient',
+                  style: TextStyle(color: AppColors.primary)),
             ),
-
             _Field(
               controller: _preparation,
               label: 'Preparation Steps (one step per line)',
@@ -620,7 +598,6 @@ class _AddDishTabState extends State<_AddDishTab> {
               label: 'YouTube URL (optional)',
               hint: 'https://www.youtube.com/watch?v=...',
             ),
-
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -630,7 +607,8 @@ class _AddDishTabState extends State<_AddDishTab> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
                       )
                     : const Text('Save Dish'),
               ),
@@ -719,5 +697,6 @@ InputDecoration _inputDecoration(String hint) => InputDecoration(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.error, width: 1.5),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     );

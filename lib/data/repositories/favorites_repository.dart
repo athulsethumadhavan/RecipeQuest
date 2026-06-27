@@ -44,7 +44,7 @@ class FavoritesRepository extends ChangeNotifier {
       'cuisine_id': dish.cuisineId,
       'name': dish.name,
       'thumbnail_url': dish.thumbnailUrl,
-      'category': dish.category,
+      'categories_raw': dish.categories.join(','),
       'short_description': dish.shortDescription,
       'cuisine_name': dish.cuisineName,
     }));

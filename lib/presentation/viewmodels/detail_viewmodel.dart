@@ -55,7 +55,7 @@ class DetailViewModel extends BaseViewModel {
       cuisineId: 0,
       name: _detail!.dishName,
       thumbnailUrl: _detail!.thumbnailUrl,
-      category: _detail!.category,
+      categories: _detail!.categories,
       shortDescription: _detail!.shortDescription,
       cuisineName: _detail!.cuisineName,
     );

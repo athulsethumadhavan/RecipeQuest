@@ -169,7 +169,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                           overflow: TextOverflow.ellipsis),
                                       const SizedBox(height: 4),
                                       Text(
-                                        '${dish.cuisineName} · ${dish.category}',
+                                        '${dish.cuisineName} · ${dish.primaryCategory}',
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodySmall,

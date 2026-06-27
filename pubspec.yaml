@@ -34,6 +34,12 @@ dependencies:
   # URL launcher (video links)
   url_launcher: ^6.2.6
 
+  # In-app YouTube player
+  youtube_player_flutter: ^9.1.1
+
+  # In-app purchases
+  in_app_purchase: ^3.2.0
+
   # Remote backend
   supabase_flutter: ^2.5.6
 

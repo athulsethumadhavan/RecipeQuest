@@ -11,10 +11,12 @@ class CuisineViewModel extends BaseViewModel {
 
   List<Cuisine> _cuisines = [];
   List<Dish> _dishes = [];
+  List<String> _categories = [];
   Cuisine? _selectedCuisine;
 
   List<Cuisine> get cuisines => _cuisines;
   List<Dish> get dishes => _dishes;
+  List<String> get categories => _categories;
   Cuisine? get selectedCuisine => _selectedCuisine;
 
   Future<void> loadCuisines() async {
@@ -32,6 +34,7 @@ class CuisineViewModel extends BaseViewModel {
     setLoading();
     try {
       _dishes = await _repository.getDishesByCuisine(cuisine.id);
+      _categories = await _repository.getCategoriesForCuisine(cuisine.id);
       setSuccess();
     } catch (e) {
       setError(e.toString());

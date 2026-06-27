@@ -92,7 +92,7 @@ class FeaturedBanner extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        _Tag(text: dish.category),
+                        _Tag(text: dish.primaryCategory),
                         const SizedBox(width: 8),
                         _Tag(text: dish.cuisineName),
                       ],

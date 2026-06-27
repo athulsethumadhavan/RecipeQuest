@@ -8,8 +8,6 @@ class Cuisine {
   final String gradientStart; // hex without #
   final String gradientEnd;
   final String thumbnailUrl;
-  /// Comma-separated category string stored in DB, e.g. "Breakfast,Lunch,Dinner"
-  final String categoriesRaw;
 
   const Cuisine({
     required this.id,
@@ -19,13 +17,7 @@ class Cuisine {
     required this.gradientStart,
     required this.gradientEnd,
     required this.thumbnailUrl,
-    this.categoriesRaw = '',
   });
-
-  /// Parsed list of categories, e.g. ['Breakfast', 'Lunch', 'Dinner']
-  List<String> get categories => categoriesRaw.isEmpty
-      ? []
-      : categoriesRaw.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
 
   factory Cuisine.fromMap(Map<String, dynamic> map) {
     return Cuisine(
@@ -36,7 +28,6 @@ class Cuisine {
       gradientStart: map['gradient_start'] as String,
       gradientEnd: map['gradient_end'] as String,
       thumbnailUrl: (map['thumbnail_url'] as String?) ?? '',
-      categoriesRaw: (map['categories'] as String?) ?? '',
     );
   }
 

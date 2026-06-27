@@ -44,8 +44,18 @@ class AppRouter {
           return DetailScreen(dishId: id, preloadedDish: dish);
         },
       ),
+      GoRoute(
+        path: cuisines,
+        builder: (context, state) => const CuisineListScreen(),
+      ),
+      // Explore More — no banner ad
+      GoRoute(
+        path: cuisinePreference,
+        builder: (context, state) =>
+            const CuisinePreferenceScreen(isEditing: true),
+      ),
 
-      // All other main screens — wrapped with banner ad at bottom
+      // Main screens — wrapped with banner ad at bottom
       ShellRoute(
         builder: (context, state, child) => _AdShell(child: child),
         routes: [
@@ -58,10 +68,6 @@ class AppRouter {
             builder: (context, state) => const SearchScreen(),
           ),
           GoRoute(
-            path: cuisines,
-            builder: (context, state) => const CuisineListScreen(),
-          ),
-          GoRoute(
             path: cuisineMeals,
             builder: (context, state) {
               final id = int.parse(state.pathParameters['id']!);
@@ -71,11 +77,6 @@ class AppRouter {
           GoRoute(
             path: admin,
             builder: (context, state) => const AdminScreen(),
-          ),
-          GoRoute(
-            path: cuisinePreference,
-            builder: (context, state) =>
-                const CuisinePreferenceScreen(isEditing: true),
           ),
         ],
       ),

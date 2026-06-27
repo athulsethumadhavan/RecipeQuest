@@ -121,14 +121,22 @@ class _CuisineMealsScreenState extends State<CuisineMealsScreen> {
       builder: (context, vm, _) {
         final cuisine = vm.selectedCuisine;
 
-        final cuisineCategories = cuisine?.categories ?? [];
-        final categories = cuisineCategories.isNotEmpty
-            ? cuisineCategories
-            : [...{...vm.dishes.map((d) => d.category)}];
+        // Primary: categories from the cuisine_categories junction table.
+        // Fallback: unique categories derived from the loaded dishes themselves
+        // (handles the case where junction tables haven't synced yet).
+        final categories = vm.categories.isNotEmpty
+            ? vm.categories
+            : (vm.dishes
+                    .expand((d) => d.categories)
+                    .toSet()
+                    .toList()
+                  ..sort());
 
         final filtered = _selectedCategory.isEmpty
             ? vm.dishes
-            : vm.dishes.where((d) => d.category == _selectedCategory).toList();
+            : vm.dishes
+                .where((d) => d.categories.contains(_selectedCategory))
+                .toList();
 
         final hasFilter = _selectedCategory.isNotEmpty;
 
@@ -417,7 +425,7 @@ class _DishCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            dish.category,
+                            dish.primaryCategory,
                             style: const TextStyle(
                               color: AppColors.primary,
                               fontSize: 11,
