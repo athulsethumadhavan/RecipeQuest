@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +22,17 @@ import 'presentation/viewmodels/cuisine_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Suppress noisy WebView logs from youtube_player_flutter (VideoTime, etc.)
+  debugPrint = (String? message, {int? wrapWidth}) {
+    if (message != null &&
+        (message.contains('VideoTime') ||
+         message.contains('calling "Video') ||
+         message.contains('WebView ID'))) {
+      return; // drop it
+    }
+    debugPrintSynchronously(message ?? '', wrapWidth: wrapWidth);
+  };
 
   await Supabase.initialize(
     url: SupabaseConfig.url,

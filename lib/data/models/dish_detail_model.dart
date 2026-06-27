@@ -98,9 +98,15 @@ class DishDetail {
           : raw.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
       shortDescription: map['short_description'] as String,
       fullDescription: map['full_description'] as String,
-      ingredients: rawIngredients
-          .map((e) => DishIngredient.fromMap(e as Map<String, dynamic>))
-          .toList(),
+      ingredients: rawIngredients.map((e) {
+        if (e is Map<String, dynamic>) {
+          // Legacy format: {"name": "...", "measure": "..."}
+          return DishIngredient.fromMap(e);
+        } else {
+          // New format: plain string e.g. "400g spaghetti"
+          return DishIngredient(name: e as String, measure: '');
+        }
+      }).toList(),
       preparation: map['preparation'] as String,
       videoUrlEn: map['video_url_en'] as String?,
       videoUrlHi: map['video_url_hi'] as String?,

@@ -57,11 +57,16 @@ class AdService {
       return;
     }
 
+    // Track whether the user earned the reward, but wait until ad is dismissed
+    // before calling onRewarded — otherwise the action fires while ad is visible.
+    bool _rewarded = false;
+
     _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _rewardedAd = null;
         loadRewardedAd(); // pre-load next ad
+        if (_rewarded) onRewarded(); // only now, after ad is gone
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         ad.dispose();
@@ -74,7 +79,7 @@ class AdService {
     await _rewardedAd!.show(
       onUserEarnedReward: (_, reward) {
         debugPrint('[AdService] Reward earned: ${reward.amount} ${reward.type}');
-        onRewarded();
+        _rewarded = true; // mark — don't call onRewarded yet
       },
     );
   }

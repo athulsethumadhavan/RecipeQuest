@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
-import '../video/video_player_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../data/services/ad_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
@@ -351,6 +351,7 @@ class _DetailScreenState extends State<DetailScreen> {
                                                     .titleMedium,
                                               ),
                                             ),
+                                            if (detail.ingredients[i].measure.isNotEmpty)
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
@@ -596,21 +597,23 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   void _launchUrl(String url) {
-    final vm = context.read<DetailViewModel>();
-    final title = vm.detail?.dishName ?? 'Recipe Video';
-
-    void openPlayer() {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => VideoPlayerScreen(videoUrl: url, title: title),
-        ),
+    Future<void> openYouTube() async {
+      // Try YouTube app first, fall back to browser
+      final appUri = Uri.parse(
+        url.replaceFirst('https://www.youtube.com', 'youtube://'),
       );
+      bool launched = false;
+      try {
+        launched = await launchUrl(appUri, mode: LaunchMode.externalApplication);
+      } catch (_) {}
+      if (!launched) {
+        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      }
     }
 
     AdService.showRewardedAd(
-      onRewarded: openPlayer,       // user watched the ad → play video
-      onNotAvailable: openPlayer,   // no ad loaded → play video anyway
+      onRewarded: openYouTube,       // ad finished → open YouTube
+      onNotAvailable: openYouTube,   // no ad loaded → open YouTube directly
     );
   }
 }

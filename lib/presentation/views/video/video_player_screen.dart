@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
@@ -34,6 +35,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         forceHD: true,
       ),
     );
+
+    // Listen for embedding errors (e.g. Error 150 = playback disabled by owner)
+    _controller.addListener(_onPlayerStateChanged);
+
     // Force landscape fullscreen on open
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
@@ -43,8 +48,42 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     _isFullScreen = true;
   }
 
+  void _onPlayerStateChanged() {
+    if (_controller.value.hasError) {
+      // Any playback error (incl. Error 150) → open in YouTube app/browser
+      _openInYouTube();
+    }
+  }
+
+  Future<void> _openInYouTube() async {
+    _controller.removeListener(_onPlayerStateChanged);
+    if (!mounted) return;
+
+    // Restore orientation before leaving
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+    final uri = Uri.parse(widget.videoUrl);
+    // Try YouTube app first, fall back to browser
+    final ytAppUri = Uri.parse(
+      widget.videoUrl.replaceFirst('https://www.youtube.com', 'youtube://'),
+    );
+
+    bool launched = false;
+    try {
+      launched = await launchUrl(ytAppUri, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+
+    if (!launched) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+
+    if (mounted) Navigator.pop(context);
+  }
+
   @override
   void dispose() {
+    _controller.removeListener(_onPlayerStateChanged);
     _controller.dispose();
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
