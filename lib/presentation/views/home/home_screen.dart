@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/router/app_router.dart';
 import '../../../data/models/cuisine_model.dart';
 import '../../../data/models/dish_model.dart';
+import '../../../data/repositories/favorites_repository.dart';
 import '../../../data/services/payment_service.dart';
 import '../../viewmodels/home_viewmodel.dart';
 
@@ -87,16 +88,16 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _showPaywall(BuildContext context, Dish dish) {
+    final favRepo = context.read<FavoritesRepository>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _PaywallSheet(
         dish: dish,
+        favoritesRepository: favRepo,
         onUnlocked: () {
           Navigator.pop(context);
-          // Refresh so the new cuisine appears in home grid too
-          context.read<HomeViewModel>().refresh();
           _goToDetail(dish);
         },
         onDismissed: () => Navigator.pop(context),
@@ -166,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen>
                       const SizedBox(width: 10),
                       _IconBtn(
                         icon: Icons.favorite_border_rounded,
-                        onTap: () {},
+                        onTap: () => context.push(AppRouter.favorites),
                       ),
                     ],
                   ),
@@ -536,11 +537,13 @@ class _CuisineGrid extends StatelessWidget {
 
 class _PaywallSheet extends StatefulWidget {
   final Dish dish;
+  final FavoritesRepository favoritesRepository;
   final VoidCallback onUnlocked;
   final VoidCallback onDismissed;
 
   const _PaywallSheet({
     required this.dish,
+    required this.favoritesRepository,
     required this.onUnlocked,
     required this.onDismissed,
   });
@@ -555,9 +558,28 @@ class _PaywallSheetState extends State<_PaywallSheet> {
   Future<void> _purchase() async {
     setState(() => _purchasing = true);
 
-    await PaymentService.purchaseCuisineAccess(
-      cuisineId: widget.dish.cuisineId,
-      onSuccess: () {
+    // On simulators / debug builds the store is unavailable.
+    // Bypass payment so the full flow can be tested without a real device.
+    if (!PaymentService.isAvailable) {
+      assert(() {
+        // Debug-only bypass: simulate a successful purchase.
+        Future.microtask(() async {
+          await widget.favoritesRepository.addFavorite(widget.dish);
+          if (mounted) widget.onUnlocked();
+        });
+        return true;
+      }());
+      // In release builds the store really is unavailable — show the dialog.
+      if (const bool.fromEnvironment('dart.vm.product')) {
+        setState(() => _purchasing = false);
+        _showStoreUnavailableDialog();
+      }
+      return;
+    }
+
+    await PaymentService.purchaseDishAccess(
+      onSuccess: () async {
+        await widget.favoritesRepository.addFavorite(widget.dish);
         if (mounted) widget.onUnlocked();
       },
       onFailed: () {
@@ -572,12 +594,6 @@ class _PaywallSheetState extends State<_PaywallSheet> {
         }
       },
     );
-
-    // If store not available, show dialog
-    if (!PaymentService.isAvailable && mounted) {
-      setState(() => _purchasing = false);
-      _showStoreUnavailableDialog();
-    }
   }
 
   void _showStoreUnavailableDialog() {
@@ -643,7 +659,7 @@ class _PaywallSheetState extends State<_PaywallSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
-              'Unlock ${widget.dish.cuisineName} Recipes',
+              widget.dish.name,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w800,
@@ -657,8 +673,8 @@ class _PaywallSheetState extends State<_PaywallSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
-              'Get full access to all ${widget.dish.cuisineName} dishes '
-              'including "${widget.dish.name}" and more.',
+              'This recipe is from ${widget.dish.cuisineName} cuisine. '
+              'Pay $price to unlock this recipe and save it to your favourites.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
@@ -668,25 +684,6 @@ class _PaywallSheetState extends State<_PaywallSheet> {
           ),
 
           const SizedBox(height: 32),
-
-          // Price badge
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '$price one-time purchase',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ),
-
-          const SizedBox(height: 24),
 
           // Unlock button
           Padding(
@@ -714,10 +711,10 @@ class _PaywallSheetState extends State<_PaywallSheet> {
                         ),
                       )
                     : Text(
-                        'Unlock for $price',
+                        'Unlock & Add to Favourites for $price',
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 16,
+                          fontSize: 15,
                         ),
                       ),
               ),
@@ -726,7 +723,6 @@ class _PaywallSheetState extends State<_PaywallSheet> {
 
           const SizedBox(height: 12),
 
-          // Not now
           TextButton(
             onPressed: widget.onDismissed,
             child: Text(

@@ -29,6 +29,15 @@ class CuisineViewModel extends BaseViewModel {
     }
   }
 
+  /// Reload whichever screen is currently visible (called after Realtime sync).
+  Future<void> refresh() async {
+    if (_selectedCuisine != null) {
+      await loadDishesByCuisine(_selectedCuisine!);
+    } else if (_cuisines.isNotEmpty) {
+      await loadCuisines();
+    }
+  }
+
   Future<void> loadDishesByCuisine(Cuisine cuisine) async {
     _selectedCuisine = cuisine;
     setLoading();

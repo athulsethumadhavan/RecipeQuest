@@ -10,6 +10,7 @@ import 'data/database/app_database.dart';
 import 'data/services/sync_service.dart';
 import 'data/services/ad_service.dart';
 import 'data/services/payment_service.dart';
+import 'data/services/realtime_sync_service.dart';
 import 'data/repositories/cuisine_repository.dart';
 import 'data/repositories/favorites_repository.dart';
 import 'data/repositories/preference_repository.dart';
@@ -21,17 +22,13 @@ import 'presentation/viewmodels/cuisine_viewmodel.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialise Supabase client.
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
   );
 
-  // Open local SQLite (runs migrations if needed).
   await AppDatabase.database;
 
-  // Sync remote data into local DB; UI always reads from SQLite.
-  // On error (e.g. no network) the app continues with whatever is cached locally.
   try {
     await SyncService.sync();
   } catch (e, st) {
@@ -39,11 +36,9 @@ void main() async {
   }
 
   await MobileAds.instance.initialize();
-  AdService.loadRewardedAd(); // pre-load first ad
+  AdService.loadRewardedAd();
 
-  // Init IAP — creates the product reference used by the paywall
-  final prefRepo = PreferenceRepository();
-  await PaymentService.init(prefRepo);
+  await PaymentService.init();
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -53,45 +48,68 @@ void main() async {
   );
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  runApp(RecipeQuestApp(prefRepository: prefRepo));
+  runApp(const RecipeQuestApp());
 }
 
-class RecipeQuestApp extends StatelessWidget {
-  final PreferenceRepository prefRepository;
-  const RecipeQuestApp({super.key, required this.prefRepository});
+class RecipeQuestApp extends StatefulWidget {
+  const RecipeQuestApp({super.key});
+
+  @override
+  State<RecipeQuestApp> createState() => _RecipeQuestAppState();
+}
+
+class _RecipeQuestAppState extends State<RecipeQuestApp> {
+  // Shared repository instances — one of each, reused by all ViewModels.
+  final _cuisineRepo  = CuisineRepository();
+  final _prefRepo     = PreferenceRepository();
+  final _favRepo      = FavoritesRepository();
+
+  late final HomeViewModel     _homeVM;
+  late final SearchViewModel   _searchVM;
+  late final CuisineViewModel  _cuisineVM;
+  late final DetailViewModel   _detailVM;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _homeVM    = HomeViewModel(repository: _cuisineRepo, prefRepository: _prefRepo);
+    _searchVM  = SearchViewModel(repository: _cuisineRepo);
+    _cuisineVM = CuisineViewModel(repository: _cuisineRepo);
+    _detailVM  = DetailViewModel(repository: _cuisineRepo, favoritesRepository: _favRepo);
+
+    // Subscribe to Supabase Realtime — re-syncs SQLite on any table change.
+    RealtimeSyncService.start(onSynced: _onRemoteDataChanged);
+  }
+
+  /// Called on the main thread after every successful Realtime-triggered sync.
+  void _onRemoteDataChanged() {
+    _homeVM.refresh();
+    _searchVM.refresh();
+    _cuisineVM.refresh();
+  }
+
+  @override
+  void dispose() {
+    RealtimeSyncService.stop();
+    _homeVM.dispose();
+    _searchVM.dispose();
+    _cuisineVM.dispose();
+    _detailVM.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<CuisineRepository>(create: (_) => CuisineRepository()),
-        ChangeNotifierProvider<FavoritesRepository>(
-            create: (_) => FavoritesRepository()),
-        ChangeNotifierProvider<PreferenceRepository>.value(
-          value: prefRepository,
-        ),
-        ChangeNotifierProvider<HomeViewModel>(
-          create: (ctx) => HomeViewModel(
-            repository: ctx.read<CuisineRepository>(),
-            prefRepository: ctx.read<PreferenceRepository>(),
-          ),
-        ),
-        ChangeNotifierProvider<DetailViewModel>(
-          create: (ctx) => DetailViewModel(
-            repository: ctx.read<CuisineRepository>(),
-            favoritesRepository: ctx.read<FavoritesRepository>(),
-          ),
-        ),
-        ChangeNotifierProvider<SearchViewModel>(
-          create: (ctx) => SearchViewModel(
-            repository: ctx.read<CuisineRepository>(),
-          ),
-        ),
-        ChangeNotifierProvider<CuisineViewModel>(
-          create: (ctx) => CuisineViewModel(
-            repository: ctx.read<CuisineRepository>(),
-          ),
-        ),
+        Provider<CuisineRepository>.value(value: _cuisineRepo),
+        ChangeNotifierProvider<FavoritesRepository>.value(value: _favRepo),
+        ChangeNotifierProvider<PreferenceRepository>.value(value: _prefRepo),
+        ChangeNotifierProvider<HomeViewModel>.value(value: _homeVM),
+        ChangeNotifierProvider<DetailViewModel>.value(value: _detailVM),
+        ChangeNotifierProvider<SearchViewModel>.value(value: _searchVM),
+        ChangeNotifierProvider<CuisineViewModel>.value(value: _cuisineVM),
       ],
       child: MaterialApp.router(
         title: 'Recipe Quest',

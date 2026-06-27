@@ -1,12 +1,11 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import '../repositories/preference_repository.dart';
 
-/// Handles the $1 cuisine-unlock in-app purchase.
+/// Handles the $1 dish-unlock in-app purchase.
 ///
 /// SETUP (do once in both stores before releasing):
-///   • Product ID : `cuisine_unlock`
+///   • Product ID : `dish_unlock`
 ///   • Type       : Consumable (Android) / Consumable (iOS)
 ///   • Price      : $0.99 USD (or your local equivalent of ~$1)
 ///
@@ -17,16 +16,14 @@ import '../repositories/preference_repository.dart';
 class PaymentService {
   PaymentService._();
 
-  static const String productId = 'cuisine_unlock';
+  static const String productId = 'dish_unlock';
   static final InAppPurchase _iap = InAppPurchase.instance;
 
   static StreamSubscription<List<PurchaseDetails>>? _subscription;
   static ProductDetails? _product;
   static bool _storeAvailable = false;
-  static PreferenceRepository? _prefRepository;
 
   // Per-purchase callbacks
-  static int? _pendingCuisineId;
   static VoidCallback? _onSuccess;
   static VoidCallback? _onFailed;
 
@@ -38,9 +35,7 @@ class PaymentService {
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   /// Call once at app start (after MobileAds / Supabase init).
-  static Future<void> init(PreferenceRepository prefRepository) async {
-    _prefRepository = prefRepository;
-
+  static Future<void> init() async {
     _storeAvailable = await _iap.isAvailable();
     if (!_storeAvailable) {
       debugPrint('[PaymentService] Store not available on this device');
@@ -73,10 +68,11 @@ class PaymentService {
 
   // ── Purchase flow ──────────────────────────────────────────────────────────
 
-  /// Initiates the store purchase to unlock [cuisineId].
-  /// Returns false immediately if the store is not ready.
-  static Future<bool> purchaseCuisineAccess({
-    required int cuisineId,
+  /// Initiates the store purchase.
+  /// [onSuccess] is called after a confirmed purchase — caller handles
+  /// any side effects (add to favourites, navigate, etc.).
+  /// [onFailed] is called on cancel or error.
+  static Future<bool> purchaseDishAccess({
     required VoidCallback onSuccess,
     required VoidCallback onFailed,
   }) async {
@@ -86,7 +82,6 @@ class PaymentService {
       return false;
     }
 
-    _pendingCuisineId = cuisineId;
     _onSuccess = onSuccess;
     _onFailed = onFailed;
 
@@ -114,7 +109,6 @@ class PaymentService {
           if (p.pendingCompletePurchase) {
             await _iap.completePurchase(p);
           }
-          await _unlockCuisine();
           _onSuccess?.call();
           _clear();
           break;
@@ -141,19 +135,7 @@ class PaymentService {
     }
   }
 
-  static Future<void> _unlockCuisine() async {
-    final id = _pendingCuisineId;
-    final repo = _prefRepository;
-    if (id == null || repo == null) return;
-
-    final current = await repo.getSelectedCuisineIds();
-    if (!current.contains(id)) {
-      await repo.updateSelectedCuisineIds([...current, id]);
-    }
-  }
-
   static void _clear() {
-    _pendingCuisineId = null;
     _onSuccess = null;
     _onFailed = null;
   }

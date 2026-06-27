@@ -10,6 +10,7 @@ import '../../presentation/views/cuisine/cuisine_list_screen.dart';
 import '../../presentation/views/cuisine/cuisine_meals_screen.dart';
 import '../../presentation/views/admin/admin_screen.dart';
 import '../../presentation/views/onboarding/cuisine_preference_screen.dart';
+import '../../presentation/views/favorites/favorites_screen.dart';
 
 class AppRouter {
   AppRouter._();
@@ -23,6 +24,7 @@ class AppRouter {
   static const String admin = '/admin';
   static const String onboarding = '/onboarding';
   static const String cuisinePreference = '/preference';
+  static const String favorites = '/favorites';
 
   static final GoRouter router = GoRouter(
     initialLocation: splash,
@@ -53,6 +55,12 @@ class AppRouter {
         path: cuisinePreference,
         builder: (context, state) =>
             const CuisinePreferenceScreen(isEditing: true),
+      ),
+
+      // Favourites — no banner ad
+      GoRoute(
+        path: favorites,
+        builder: (context, state) => const FavoritesScreen(),
       ),
 
       // Main screens — wrapped with banner ad at bottom

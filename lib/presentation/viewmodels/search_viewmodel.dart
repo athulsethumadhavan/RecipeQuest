@@ -39,6 +39,11 @@ class SearchViewModel extends BaseViewModel {
     }
   }
 
+  /// Re-run the current query with fresh SQLite data (called after Realtime sync).
+  Future<void> refresh() async {
+    if (_query.isNotEmpty) await _search(_query);
+  }
+
   void clearSearch() {
     _query = '';
     _results = [];
