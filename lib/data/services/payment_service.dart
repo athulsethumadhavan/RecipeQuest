@@ -2,25 +2,24 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
-/// Handles the $1 dish-unlock in-app purchase.
+/// Handles in-app purchases:
+///   • dish_unlock    — $0.99 consumable, unlocks a single dish
+///   • cuisine_unlock — $9.99 consumable, unlocks a single cuisine subscription
 ///
 /// SETUP (do once in both stores before releasing):
-///   • Product ID : `dish_unlock`
-///   • Type       : Consumable (Android) / Consumable (iOS)
-///   • Price      : $0.99 USD (or your local equivalent of ~$1)
-///
-/// On Android: create the product in Google Play Console →
-///   Monetize → Products → In-app products → Create product.
-/// On iOS: create it in App Store Connect →
-///   My Apps → [Your App] → In-App Purchases → +.
+///   On Android: Google Play Console → Monetize → In-app products → Create.
+///   On iOS: App Store Connect → My Apps → [App] → In-App Purchases → +.
 class PaymentService {
   PaymentService._();
 
-  static const String productId = 'dish_unlock';
+  static const String productId        = 'dish_unlock';
+  static const String cuisineProductId = 'cuisine_unlock';
+
   static final InAppPurchase _iap = InAppPurchase.instance;
 
   static StreamSubscription<List<PurchaseDetails>>? _subscription;
   static ProductDetails? _product;
+  static ProductDetails? _cuisineProduct;
   static bool _storeAvailable = false;
 
   // Per-purchase callbacks
@@ -28,9 +27,13 @@ class PaymentService {
   static VoidCallback? _onFailed;
 
   static bool get isAvailable => _storeAvailable && _product != null;
+  static bool get isCuisineAvailable => _storeAvailable && _cuisineProduct != null;
 
   /// Human-readable price from the store (e.g. "$0.99"), or fallback.
   static String get displayPrice => _product?.price ?? '\$1.00';
+
+  /// Human-readable cuisine price (e.g. "$9.99"), or fallback.
+  static String get cuisineDisplayPrice => _cuisineProduct?.price ?? '\$10.00';
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
@@ -48,16 +51,20 @@ class PaymentService {
       onError: (e) => debugPrint('[PaymentService] Stream error: $e'),
     );
 
-    // Load the product metadata
-    final response = await _iap.queryProductDetails({productId});
+    // Load both product metadata in one call
+    final response = await _iap.queryProductDetails({productId, cuisineProductId});
     if (response.notFoundIDs.isNotEmpty) {
-      debugPrint(
-          '[PaymentService] Product "$productId" not found in store. '
+      debugPrint('[PaymentService] Products not found: ${response.notFoundIDs}. '
           'Check Play Console / App Store Connect.');
     }
-    if (response.productDetails.isNotEmpty) {
-      _product = response.productDetails.first;
-      debugPrint('[PaymentService] Product ready: ${_product!.price}');
+    for (final p in response.productDetails) {
+      if (p.id == productId) {
+        _product = p;
+        debugPrint('[PaymentService] Dish product ready: ${p.price}');
+      } else if (p.id == cuisineProductId) {
+        _cuisineProduct = p;
+        debugPrint('[PaymentService] Cuisine product ready: ${p.price}');
+      }
     }
   }
 
@@ -66,7 +73,7 @@ class PaymentService {
     _subscription = null;
   }
 
-  // ── Purchase flow ──────────────────────────────────────────────────────────
+  // ── Purchase flows ─────────────────────────────────────────────────────────
 
   /// Initiates the store purchase.
   /// [onSuccess] is called after a confirmed purchase — caller handles
@@ -96,12 +103,37 @@ class PaymentService {
     }
   }
 
+  /// Initiates the $10 cuisine-unlock purchase.
+  static Future<bool> purchaseCuisineAccess({
+    required VoidCallback onSuccess,
+    required VoidCallback onFailed,
+  }) async {
+    if (!isCuisineAvailable) {
+      debugPrint('[PaymentService] Cuisine store unavailable or product not loaded');
+      onFailed();
+      return false;
+    }
+
+    _onSuccess = onSuccess;
+    _onFailed  = onFailed;
+
+    final param = PurchaseParam(productDetails: _cuisineProduct!);
+    try {
+      return await _iap.buyConsumable(purchaseParam: param);
+    } catch (e) {
+      debugPrint('[PaymentService] buyConsumable (cuisine) error: $e');
+      _clear();
+      onFailed();
+      return false;
+    }
+  }
+
   // ── Internal ───────────────────────────────────────────────────────────────
 
   static Future<void> _handlePurchaseUpdates(
       List<PurchaseDetails> purchases) async {
     for (final p in purchases) {
-      if (p.productID != productId) continue;
+      if (p.productID != productId && p.productID != cuisineProductId) continue;
 
       switch (p.status) {
         case PurchaseStatus.purchased:

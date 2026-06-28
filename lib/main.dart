@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +23,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Suppress noisy WebView logs from youtube_player_flutter (VideoTime, etc.)
+  final _originalDebugPrint = debugPrint;
   debugPrint = (String? message, {int? wrapWidth}) {
     if (message != null &&
         (message.contains('VideoTime') ||
@@ -31,7 +31,7 @@ void main() async {
          message.contains('WebView ID'))) {
       return; // drop it
     }
-    debugPrintSynchronously(message ?? '', wrapWidth: wrapWidth);
+    _originalDebugPrint(message, wrapWidth: wrapWidth);
   };
 
   await Supabase.initialize(

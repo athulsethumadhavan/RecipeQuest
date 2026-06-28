@@ -7,6 +7,7 @@ import '../../../core/router/app_router.dart';
 import '../../../data/models/cuisine_model.dart';
 import '../../../data/repositories/cuisine_repository.dart';
 import '../../../data/repositories/preference_repository.dart';
+import '../../../data/services/payment_service.dart';
 
 class CuisinePreferenceScreen extends StatefulWidget {
   /// When true, shown as a picker from home (multi-select, not first-launch)
@@ -38,6 +39,9 @@ class _CuisinePreferenceScreenState extends State<CuisinePreferenceScreen> {
   bool _saving = false;
 
   bool get _isMulti => widget.isEditing;
+
+  /// Cuisines the user just picked that aren't already locked/subscribed.
+  Set<int> get _newlySelected => _multiSelected.difference(_lockedIds);
 
   @override
   void initState() {
@@ -99,6 +103,54 @@ class _CuisinePreferenceScreenState extends State<CuisinePreferenceScreen> {
       );
       return;
     }
+
+    // In editing mode, if user picked new (unsubscribed) cuisines → IAP first
+    if (_isMulti && _newlySelected.isNotEmpty) {
+      setState(() => _saving = true);
+
+      Future<void> doUnlock() async {
+        await _prefRepo.completeOnboarding(ids);
+        if (mounted) {
+          setState(() => _saving = false);
+          context.pop();
+        }
+      }
+
+      // Debug / simulator bypass
+      if (!PaymentService.isCuisineAvailable) {
+        assert(() {
+          Future.microtask(doUnlock);
+          return true;
+        }());
+        if (const bool.fromEnvironment('dart.vm.product')) {
+          setState(() => _saving = false);
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('Store Unavailable'),
+              content: const Text(
+                  'In-app purchases are not available on this device.'),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK')),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
+      await PaymentService.purchaseCuisineAccess(
+        onSuccess: doUnlock,
+        onFailed: () {
+          if (mounted) setState(() => _saving = false);
+        },
+      );
+      return;
+    }
+
+    // Onboarding or no new cuisines selected — just save
     setState(() => _saving = true);
     await _prefRepo.completeOnboarding(ids);
     if (mounted) {
@@ -318,31 +370,45 @@ class _CuisinePreferenceScreenState extends State<CuisinePreferenceScreen> {
                   ),
 
                   // ── Button ──────────────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _saving ? null : _save,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                  Builder(builder: (context) {
+                    final newCount = _newlySelected.length;
+                    final raw = double.tryParse(
+                      PaymentService.cuisineDisplayPrice
+                          .replaceAll(RegExp(r'[^\d.]'), ''),
+                    );
+                    final total = raw != null
+                        ? '\$${(raw * newCount).toStringAsFixed(2)}'
+                        : '\$${10 * newCount}.00';
+                    final label = (widget.isEditing && newCount > 0)
+                        ? 'Subscribe for $total'
+                        : (widget.isEditing ? 'Save' : 'Continue');
+
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _saving ? null : _save,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: _saving
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
+                                )
+                              : Text(
+                                  label,
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700),
+                                ),
                         ),
-                        child: _saving
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
-                              )
-                            : Text(
-                                widget.isEditing ? 'Save' : 'Continue',
-                                style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700),
-                              ),
                       ),
-                    ),
-                  ),
+                    );
+                  }),
                 ],
               ),
       ),

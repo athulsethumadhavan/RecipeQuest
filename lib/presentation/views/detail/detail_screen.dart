@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../video/video_player_screen.dart';
 import '../../../data/services/ad_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
@@ -597,23 +598,22 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   void _launchUrl(String url) {
-    Future<void> openYouTube() async {
-      // Try YouTube app first, fall back to browser
-      final appUri = Uri.parse(
-        url.replaceFirst('https://www.youtube.com', 'youtube://'),
+    void openVideo() {
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => VideoPlayerScreen(
+            videoUrl: url,
+            title: '',
+          ),
+        ),
       );
-      bool launched = false;
-      try {
-        launched = await launchUrl(appUri, mode: LaunchMode.externalApplication);
-      } catch (_) {}
-      if (!launched) {
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-      }
     }
 
     AdService.showRewardedAd(
-      onRewarded: openYouTube,       // ad finished → open YouTube
-      onNotAvailable: openYouTube,   // no ad loaded → open YouTube directly
+      onRewarded: openVideo,       // ad finished → open in-app player
+      onNotAvailable: openVideo,   // no ad loaded → open in-app player directly
     );
   }
 }
