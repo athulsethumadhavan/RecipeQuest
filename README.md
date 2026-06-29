@@ -119,7 +119,7 @@ Create these products in Google Play Console and App Store Connect before releas
 
 ## Privacy Policy
 
-The privacy policy is located at [`privacy_policy.html`](./privacy_policy.html) in the project root.
+The privacy policy is located at [`privacy_policy.html`](https://athulsethumadhavan.github.io/RecipeQuest/privacy_policy.html) in the project root.
 
 > **Before release:** host this file (e.g. on GitHub Pages or your website) and update `_privacyUrl` in `lib/presentation/views/home/widgets/app_drawer.dart` with the public URL.
 

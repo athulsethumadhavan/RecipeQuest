@@ -10,8 +10,8 @@ class AppDrawer extends StatelessWidget {
   // ── URL helpers ──────────────────────────────────────────────────────────
 
   static const _privacyUrl =
-      'https://www.termsfeed.com/live/your-privacy-policy-url'; // TODO: replace
-  static const _supportEmail = 'support@recipequest.app'; // TODO: replace
+      'https://athulsethumadhavan.github.io/RecipeQuest/privacy_policy.html';
+  static const _supportEmail = 'athulsethumadhavan+recipeSupport@gmail.com'; // TODO: replace
   static const _appStoreUrl =
       'https://apps.apple.com/app/your-app-id'; // TODO: replace
   static const _playStoreUrl =
