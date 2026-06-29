@@ -3,19 +3,17 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../data/services/auth_service.dart';
 import '../../auth/auth_bottom_sheet.dart';
+import '../../support/help_support_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
   // ── URL helpers ──────────────────────────────────────────────────────────
 
-  static const _privacyUrl =
-      'https://athulsethumadhavan.github.io/RecipeQuest/privacy_policy.html';
-  static const _supportEmail = 'athulsethumadhavan+recipeSupport@gmail.com'; // TODO: replace
-  static const _appStoreUrl =
-      'https://apps.apple.com/app/your-app-id'; // TODO: replace
-  static const _playStoreUrl =
-      'https://play.google.com/store/apps/details?id=com.your.packagename'; // TODO: replace
+  static const _privacyUrl = 'https://athulsethumadhavan.github.io/RecipeQuest/privacy_policy.html';
+  static const _supportEmail = 'athulsethumadhavan+recipeSupport@gmail.com';
+  static const _appStoreUrl = 'https://apps.apple.com/app/recipe-quest/6785156653';
+  static const _playStoreUrl = 'https://play.google.com/store/apps/details?id=com.atsIOSDev.recipeQuest';
 
   Future<void> _launch(String url) async {
     final uri = Uri.parse(url);
@@ -82,14 +80,15 @@ class AppDrawer extends StatelessWidget {
                       label: 'Profile',
                       onTap: () => _showProfileSheet(context, displayName, email),
                     ),
-                  _DrawerTile(
-                    icon: Icons.workspace_premium_rounded,
-                    label: 'Subscription',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showSubscriptionSheet(context);
-                    },
-                  ),
+                  if (isLoggedIn)
+                    _DrawerTile(
+                      icon: Icons.workspace_premium_rounded,
+                      label: 'Subscription',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showSubscriptionSheet(context);
+                      },
+                    ),
                   const _Divider(),
                   _DrawerTile(
                     icon: Icons.privacy_tip_outlined,
@@ -104,7 +103,15 @@ class AppDrawer extends StatelessWidget {
                   _DrawerTile(
                     icon: Icons.help_outline_rounded,
                     label: 'Help & Support',
-                    onTap: () => _launch('mailto:$_supportEmail'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const HelpSupportScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _DrawerTile(
                     icon: Icons.star_outline_rounded,

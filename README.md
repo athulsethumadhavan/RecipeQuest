@@ -117,6 +117,12 @@ Create these products in Google Play Console and App Store Connect before releas
 
 ---
 
+## Support
+
+For help or feedback, email: [athulsethumadhavan+recipeSupport@gmail.com](mailto:athulsethumadhavan+recipeSupport@gmail.com)
+
+---
+
 ## Privacy Policy
 
 The privacy policy is located at [`privacy_policy.html`](https://athulsethumadhavan.github.io/RecipeQuest/privacy_policy.html) in the project root.
@@ -150,4 +156,6 @@ flutter run
 
 ## License
 
-Private — all rights reserved.
+Copyright © 2026 Athul Sethumadhavan. All rights reserved.
+
+This project and its source code are proprietary and confidential. Unauthorised copying, distribution, or use of this software, in whole or in part, is strictly prohibited without prior written permission from the author.

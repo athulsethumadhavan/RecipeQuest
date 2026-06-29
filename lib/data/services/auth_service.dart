@@ -107,6 +107,76 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// Verify the 6-digit OTP sent to [email] after sign-up.
+  Future<String?> verifySignupOtp({
+    required String email,
+    required String token,
+  }) async {
+    try {
+      await _client.auth.verifyOTP(
+        email: email,
+        token: token,
+        type: OtpType.signup,
+      );
+      notifyListeners();
+      return null;
+    } on AuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      debugPrint('[AuthService] verifySignupOtp error: $e');
+      return 'Verification failed. Please try again.';
+    }
+  }
+
+  /// Send a password-reset OTP to [email].
+  Future<String?> sendPasswordResetOtp({required String email}) async {
+    try {
+      await _client.auth.resetPasswordForEmail(email);
+      return null;
+    } on AuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      debugPrint('[AuthService] sendPasswordResetOtp error: $e');
+      return 'Could not send reset email. Please try again.';
+    }
+  }
+
+  /// Verify the 6-digit recovery OTP and establish a session.
+  Future<String?> verifyPasswordResetOtp({
+    required String email,
+    required String token,
+  }) async {
+    try {
+      await _client.auth.verifyOTP(
+        email: email,
+        token: token,
+        type: OtpType.recovery,
+      );
+      notifyListeners();
+      return null;
+    } on AuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      debugPrint('[AuthService] verifyPasswordResetOtp error: $e');
+      return 'Verification failed. Please try again.';
+    }
+  }
+
+  /// Update the authenticated user's password (call after verifyPasswordResetOtp).
+  Future<String?> updatePassword({required String newPassword}) async {
+    final err = passwordError(newPassword);
+    if (err != null) return err;
+    try {
+      await _client.auth.updateUser(UserAttributes(password: newPassword));
+      return null;
+    } on AuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      debugPrint('[AuthService] updatePassword error: $e');
+      return 'Failed to update password. Please try again.';
+    }
+  }
+
   /// Sign out the current user.
   Future<void> signOut() async {
     await _client.auth.signOut();

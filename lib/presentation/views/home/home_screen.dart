@@ -131,24 +131,24 @@ class _HomeScreenState extends State<HomeScreen>
             // ── Header ───────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Hamburger
-                  _IconBtn(
-                    icon: Icons.menu_rounded,
-                    onTap: () => _scaffoldKey.currentState?.openDrawer(),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: GestureDetector(
-                      onDoubleTap: _onTitleDoubleTap,
-                      behavior: HitTestBehavior.opaque,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
+                  // Top row: hamburger + title + action icons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      _IconBtn(
+                        icon: Icons.menu_rounded,
+                        onTap: () => _scaffoldKey.currentState?.openDrawer(),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onDoubleTap: _onTitleDoubleTap,
+                          behavior: HitTestBehavior.opaque,
+                          child: Text(
                             'Hi, Foodie! 👋',
                             style: Theme.of(context)
                                 .textTheme
@@ -158,40 +158,40 @@ class _HomeScreenState extends State<HomeScreen>
                                   fontWeight: FontWeight.w600,
                                 ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'What do you want\ncooking today?',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .displayMedium
-                                ?.copyWith(
-                                  height: 1.25,
-                                  fontSize:
-                                      (MediaQuery.of(context).size.width * 0.06)
-                                          .clamp(20.0, 26.0),
-                                ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          _IconBtn(
+                            icon: _searchVisible
+                                ? Icons.close_rounded
+                                : Icons.search_rounded,
+                            onTap: _toggleSearch,
+                          ),
+                          const SizedBox(width: 10),
+                          _IconBtn(
+                            icon: Icons.favorite_border_rounded,
+                            onTap: () => context.push(AppRouter.favorites),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Row(
-                    children: [
-                      _IconBtn(
-                        icon: _searchVisible
-                            ? Icons.close_rounded
-                            : Icons.search_rounded,
-                        onTap: _toggleSearch,
-                      ),
-                      const SizedBox(width: 10),
-                      _IconBtn(
-                        icon: Icons.favorite_border_rounded,
-                        onTap: () => context.push(AppRouter.favorites),
-                      ),
                     ],
+                  ),
+                  const SizedBox(height: 10),
+                  // Large title below
+                  Text(
+                    'What do you want\ncooking today?',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context)
+                        .textTheme
+                        .displayMedium
+                        ?.copyWith(
+                          height: 1.25,
+                          fontSize:
+                              (MediaQuery.of(context).size.width * 0.06)
+                                  .clamp(20.0, 26.0),
+                        ),
                   ),
                 ],
               ),
