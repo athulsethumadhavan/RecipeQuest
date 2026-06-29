@@ -6,8 +6,11 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/router/app_router.dart';
 import '../../../data/models/cuisine_model.dart';
 import '../../../data/repositories/cuisine_repository.dart';
+import '../../../data/repositories/favorites_repository.dart';
 import '../../../data/repositories/preference_repository.dart';
+import '../../../data/services/auth_service.dart';
 import '../../../data/services/payment_service.dart';
+import '../auth/auth_bottom_sheet.dart';
 
 class CuisinePreferenceScreen extends StatefulWidget {
   /// When true, shown as a picker from home (multi-select, not first-launch)
@@ -104,8 +107,16 @@ class _CuisinePreferenceScreenState extends State<CuisinePreferenceScreen> {
       return;
     }
 
-    // In editing mode, if user picked new (unsubscribed) cuisines → IAP first
+    // In editing mode, if user picked new (unsubscribed) cuisines → auth + IAP
     if (_isMulti && _newlySelected.isNotEmpty) {
+      // Check login first
+      if (!AuthService.instance.isLoggedIn) {
+        final loggedIn = await AuthBottomSheet.show(context);
+        if (loggedIn != true || !mounted) return;
+        // Merge local favourites into Supabase now that user is logged in
+        await context.read<FavoritesRepository>().onLogin();
+      }
+
       setState(() => _saving = true);
 
       Future<void> doUnlock() async {

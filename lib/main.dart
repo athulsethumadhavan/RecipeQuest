@@ -9,6 +9,7 @@ import 'core/theme/app_theme.dart';
 import 'data/database/app_database.dart';
 import 'data/services/sync_service.dart';
 import 'data/services/ad_service.dart';
+import 'data/services/auth_service.dart';
 import 'data/services/payment_service.dart';
 import 'data/services/realtime_sync_service.dart';
 import 'data/repositories/cuisine_repository.dart';
@@ -92,6 +93,9 @@ class _RecipeQuestAppState extends State<RecipeQuestApp> {
 
     // Subscribe to Supabase Realtime — re-syncs SQLite on any table change.
     RealtimeSyncService.start(onSynced: _onRemoteDataChanged);
+
+    // Pre-load favorites (merges with Supabase if already logged in)
+    _favRepo.ensureLoaded();
   }
 
   /// Called on the main thread after every successful Realtime-triggered sync.
@@ -116,6 +120,7 @@ class _RecipeQuestAppState extends State<RecipeQuestApp> {
     return MultiProvider(
       providers: [
         Provider<CuisineRepository>.value(value: _cuisineRepo),
+        ChangeNotifierProvider<AuthService>.value(value: AuthService.instance),
         ChangeNotifierProvider<FavoritesRepository>.value(value: _favRepo),
         ChangeNotifierProvider<PreferenceRepository>.value(value: _prefRepo),
         ChangeNotifierProvider<HomeViewModel>.value(value: _homeVM),

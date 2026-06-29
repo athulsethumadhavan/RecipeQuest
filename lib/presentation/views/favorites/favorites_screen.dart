@@ -6,6 +6,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/router/app_router.dart';
 import '../../../data/models/dish_model.dart';
 import '../../../data/repositories/favorites_repository.dart';
+import '../../../data/services/auth_service.dart';
+import '../auth/auth_bottom_sheet.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -25,6 +27,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 
   Future<void> _load() async {
+    if (!AuthService.instance.isLoggedIn) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
     final repo = context.read<FavoritesRepository>();
     final list = await repo.getFavorites();
     if (mounted) setState(() { _favorites = list; _loading = false; });
@@ -47,6 +53,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           ),
         ),
       );
+    }
+  }
+
+  Future<void> _signIn() async {
+    final loggedIn = await AuthBottomSheet.show(context);
+    if (loggedIn == true && mounted) {
+      await context.read<FavoritesRepository>().onLogin();
+      setState(() => _loading = true);
+      await _load();
     }
   }
 
@@ -93,7 +108,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                             .displayMedium
                             ?.copyWith(fontSize: 22, fontWeight: FontWeight.w800),
                       ),
-                      if (!_loading)
+                      if (!_loading && AuthService.instance.isLoggedIn)
                         Text(
                           '${_favorites.length} ${_favorites.length == 1 ? 'recipe' : 'recipes'}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -122,6 +137,61 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           child: CircularProgressIndicator(color: AppColors.primary));
     }
 
+    // Not logged in → prompt to sign in
+    if (!AuthService.instance.isLoggedIn) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.lock_outline_rounded,
+                    color: AppColors.primary, size: 38),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Sign in to see your favourites',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Your saved recipes are linked to your account and sync across devices.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+              ),
+              const SizedBox(height: 28),
+              ElevatedButton.icon(
+                onPressed: _signIn,
+                icon: const Icon(Icons.login_rounded, size: 18),
+                label: const Text('Sign In'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 32, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (_favorites.isEmpty) {
       return Center(
         child: Column(
@@ -146,7 +216,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Recipes you unlock will appear here.',
+              'Tap the heart on any recipe to save it here.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),

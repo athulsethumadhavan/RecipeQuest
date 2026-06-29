@@ -7,8 +7,11 @@ import '../../../core/router/app_router.dart';
 import '../../../data/models/cuisine_model.dart';
 import '../../../data/models/dish_model.dart';
 import '../../../data/repositories/favorites_repository.dart';
+import '../../../data/services/auth_service.dart';
 import '../../../data/services/payment_service.dart';
 import '../../viewmodels/home_viewmodel.dart';
+import '../auth/auth_bottom_sheet.dart';
+import 'widgets/app_drawer.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -87,7 +90,16 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  void _showPaywall(BuildContext context, Dish dish) {
+  Future<void> _showPaywall(BuildContext context, Dish dish) async {
+    // Auth gate: must be signed in before purchasing
+    if (!AuthService.instance.isLoggedIn) {
+      final loggedIn = await AuthBottomSheet.show(context);
+      if (loggedIn != true || !mounted) return;
+      // Merge local favourites into Supabase now that user is signed in
+      await context.read<FavoritesRepository>().onLogin();
+    }
+
+    if (!mounted) return;
     final favRepo = context.read<FavoritesRepository>();
     showModalBottomSheet(
       context: context,
@@ -105,9 +117,13 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: const AppDrawer(),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,6 +135,12 @@ class _HomeScreenState extends State<HomeScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Hamburger
+                  _IconBtn(
+                    icon: Icons.menu_rounded,
+                    onTap: () => _scaffoldKey.currentState?.openDrawer(),
+                  ),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: GestureDetector(
                       onDoubleTap: _onTitleDoubleTap,
