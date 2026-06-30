@@ -14,12 +14,11 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   AdSize? _adSize;
   bool _isLoaded = false;
 
-  // Test IDs — replace with your real Ad Unit IDs before releasing
   static String get _adUnitId {
     if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544/6300978111'; // Android test banner
+      return 'ca-app-pub-7475228419610805/6447315815';
     } else {
-      return 'ca-app-pub-3940256099942544/2934735716'; // iOS test banner
+      return 'ca-app-pub-7475228419610805/3558262749';
     }
   }
 

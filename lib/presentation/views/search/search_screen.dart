@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/router/app_router.dart';
@@ -219,6 +220,21 @@ class _NoResults extends StatelessWidget {
   final String query;
   const _NoResults({required this.query});
 
+  static const _supportEmail = 'athulsethumadhavan+recipeSupport@gmail.com';
+
+  Future<void> _mailSupport(String query) async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: _supportEmail,
+      queryParameters: {
+        'subject': 'Recipe Request: $query',
+        'body': 'Hi,\n\nI searched for "$query" but couldn\'t find it in Recipe Quest. '
+            'Could you add it?\n\nThanks!',
+      },
+    );
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -233,6 +249,25 @@ class _NoResults extends StatelessWidget {
           Text('No results for "$query"',
               style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center),
+          const SizedBox(height: 20),
+          const Text(
+            'Can\'t find what you\'re looking for?',
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: () => _mailSupport(query),
+            child: const Text(
+              _supportEmail,
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+                decoration: TextDecoration.underline,
+                decorationColor: AppColors.primary,
+              ),
+            ),
+          ),
         ],
       ),
     );

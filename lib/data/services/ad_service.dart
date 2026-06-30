@@ -4,12 +4,8 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 class AdService {
   AdService._();
 
-  // ── Replace with your real Ad Unit IDs from AdMob ─────────────────────────
-  // Use test IDs during development, replace before release
-  static const _androidRewardedId =
-      'ca-app-pub-3940256099942544/5224354917'; // test ID
-  static const _iosRewardedId =
-      'ca-app-pub-3940256099942544/1712485313';  // test ID
+  static const _androidRewardedId = 'ca-app-pub-7475228419610805/7945857057';
+  static const _iosRewardedId     = 'ca-app-pub-7475228419610805/4333915106';
 
   static String get _adUnitId =>
       defaultTargetPlatform == TargetPlatform.iOS
