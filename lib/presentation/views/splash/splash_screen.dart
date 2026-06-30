@@ -89,8 +89,14 @@ class _SplashScreenState extends State<SplashScreen>
                       color: Colors.white.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(28),
                     ),
-                    child: const Center(
-                      child: Text('🍽️', style: TextStyle(fontSize: 52)),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: Image.asset(
+                        'assets/images/app_icon.png',
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
