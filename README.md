@@ -131,6 +131,16 @@ The privacy policy is located at [`privacy_policy.html`](https://athulsethumadha
 
 ---
 
+## Account Deletion
+
+Users can request deletion of their account and all associated data via:
+
+**https://atsiosdev.github.io/RecipeQuest/delete-account**
+
+Requests are processed within 7 business days. Data removed includes: user profile, favourites, purchase history, and all personal data.
+
+---
+
 ## Getting Started
 
 See [SETUP.md](./SETUP.md) for full setup instructions.
