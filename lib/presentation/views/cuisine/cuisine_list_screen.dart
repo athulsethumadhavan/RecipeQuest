@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../data/repositories/preference_repository.dart';
 import '../../../data/services/payment_service.dart';
 import '../../viewmodels/cuisine_viewmodel.dart';
@@ -120,7 +121,7 @@ class _CuisineListScreenState extends State<CuisineListScreen> {
           children: [
             // ── Header ──────────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              padding: EdgeInsets.fromLTRB(Responsive.horizontalPadding(context), 16, Responsive.horizontalPadding(context), 0),
               child: Row(
                 children: [
                   GestureDetector(
@@ -185,14 +186,17 @@ class _CuisineListScreenState extends State<CuisineListScreen> {
                     );
                   }
 
+                  final hp = Responsive.horizontalPadding(context);
+                  final cols = Responsive.cuisineGridColumns(context);
+                  final isTablet = Responsive.isTablet(context);
                   return GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 120),
+                    padding: EdgeInsets.fromLTRB(hp, 0, hp, 120),
                     gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 14,
-                      crossAxisSpacing: 14,
-                      childAspectRatio: 1.5,
+                        SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: cols,
+                      mainAxisSpacing: isTablet ? 18 : 14,
+                      crossAxisSpacing: isTablet ? 18 : 14,
+                      childAspectRatio: isTablet ? 1.8 : 1.5,
                     ),
                     itemCount: vm.cuisines.length,
                     itemBuilder: (context, i) {
@@ -327,8 +331,8 @@ class _CuisineListScreenState extends State<CuisineListScreen> {
                   AnimatedPositioned(
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeOutCubic,
-                    left: 20,
-                    right: 20,
+                    left: Responsive.horizontalPadding(context),
+                    right: Responsive.horizontalPadding(context),
                     bottom: _selectedIds.isEmpty ? -100 : 16,
                     child: SafeArea(
                       child: GestureDetector(

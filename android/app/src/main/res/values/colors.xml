@@ -2,6 +2,7 @@
 <resources>
     <!-- Matches AppTheme.primary -->
     <color name="launch_background">#E65100</color>
+    <color name="ic_launcher_background">#2F8BE6</color>
     <!-- Status bar colour (set in MainActivity if needed) -->
     <color name="colorPrimary">#E65100</color>
     <color name="colorPrimaryDark">#BF360C</color>

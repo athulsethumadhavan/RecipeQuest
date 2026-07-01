@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../data/models/dish_model.dart';
 import '../../../data/repositories/favorites_repository.dart';
 import '../../viewmodels/cuisine_viewmodel.dart';
@@ -308,8 +309,35 @@ class _CuisineMealsScreenState extends State<CuisineMealsScreen> {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                  sliver: SliverList(
+                  padding: EdgeInsets.fromLTRB(Responsive.horizontalPadding(context), 0, Responsive.horizontalPadding(context), 24),
+                  sliver: Responsive.isTablet(context)
+                    ? SliverGrid(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: Responsive.dishGridColumns(context),
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          childAspectRatio: 1.6,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, i) {
+                            final dish = filtered[i];
+                            return Consumer<FavoritesRepository>(
+                              builder: (context, favRepo, _) => _DishCard(
+                                dish: dish,
+                                bgColor: _cardColors[i % _cardColors.length],
+                                isFavorite: favRepo.isFavoriteSync(dish.id),
+                                onFavoriteTap: () => favRepo.toggleFavorite(dish),
+                                onTap: () => context.push(
+                                  AppRouter.detail.replaceFirst(':id', '${dish.id}'),
+                                  extra: dish,
+                                ),
+                              ),
+                            );
+                          },
+                          childCount: filtered.length,
+                        ),
+                      )
+                    : SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, i) {
                         final dish = filtered[i];

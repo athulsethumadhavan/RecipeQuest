@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../data/models/dish_model.dart';
 import '../../../data/repositories/favorites_repository.dart';
 import '../../../data/services/auth_service.dart';
@@ -74,7 +75,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           children: [
             // ── Header ──────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+              padding: EdgeInsets.fromLTRB(Responsive.horizontalPadding(context), Responsive.isTablet(context) ? 28 : 20, Responsive.horizontalPadding(context), 0),
               child: Row(
                 children: [
                   GestureDetector(
@@ -241,8 +242,32 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       );
     }
 
+    final hp = Responsive.horizontalPadding(context);
+    final isTablet = Responsive.isTablet(context);
+
+    if (isTablet) {
+      return GridView.builder(
+        padding: EdgeInsets.fromLTRB(hp, 0, hp, 32),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: Responsive.isLargeTablet(context) ? 3 : 2,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 2.2,
+        ),
+        itemCount: _favorites.length,
+        itemBuilder: (context, i) => _FavoriteTile(
+          dish: _favorites[i],
+          onTap: () => context.push(
+            AppRouter.detail.replaceFirst(':id', '${_favorites[i].id}'),
+            extra: _favorites[i],
+          ),
+          onRemove: () => _remove(_favorites[i]),
+        ),
+      );
+    }
+
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+      padding: EdgeInsets.fromLTRB(hp, 0, hp, 32),
       itemCount: _favorites.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, i) => _FavoriteTile(

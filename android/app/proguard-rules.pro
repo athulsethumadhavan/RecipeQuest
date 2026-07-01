@@ -15,6 +15,10 @@
 -keep class com.android.billingclient.** { *; }
 -dontwarn com.android.billingclient.**
 
+# ── Play Core (referenced by Flutter embedder for deferred components) ────────
+-dontwarn com.google.android.play.core.**
+-keep class com.google.android.play.core.** { *; }
+
 # ── Kotlin coroutines ─────────────────────────────────────────────────────────
 -keepclassmembernames class kotlinx.** {
     volatile <fields>;

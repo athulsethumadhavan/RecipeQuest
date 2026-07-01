@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../data/models/cuisine_model.dart';
 import '../../../data/models/dish_model.dart';
 import '../../../data/repositories/favorites_repository.dart';
@@ -11,7 +12,6 @@ import '../../../data/services/auth_service.dart';
 import '../../../data/services/payment_service.dart';
 import '../../viewmodels/home_viewmodel.dart';
 import '../auth/auth_bottom_sheet.dart';
-import 'widgets/app_drawer.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -117,38 +117,34 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
   @override
   Widget build(BuildContext context) {
+    final hp = Responsive.horizontalPadding(context);
+    final isTablet = Responsive.isTablet(context);
+
     return Scaffold(
-      key: _scaffoldKey,
-      drawer: const AppDrawer(),
       body: SafeArea(
-        child: Column(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Header ───────────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-              child: Column(
+              padding: EdgeInsets.fromLTRB(hp, isTablet ? 28 : 20, hp, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Top row: hamburger + title + action icons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      _IconBtn(
-                        icon: Icons.menu_rounded,
-                        onTap: () => _scaffoldKey.currentState?.openDrawer(),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: GestureDetector(
-                          onDoubleTap: _onTitleDoubleTap,
-                          behavior: HitTestBehavior.opaque,
-                          child: Text(
+                  Expanded(
+                    child: GestureDetector(
+                      onDoubleTap: _onTitleDoubleTap,
+                      behavior: HitTestBehavior.opaque,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                             'Hi, Foodie! 👋',
                             style: Theme.of(context)
                                 .textTheme
@@ -158,40 +154,41 @@ class _HomeScreenState extends State<HomeScreen>
                                   fontWeight: FontWeight.w600,
                                 ),
                           ),
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          _IconBtn(
-                            icon: _searchVisible
-                                ? Icons.close_rounded
-                                : Icons.search_rounded,
-                            onTap: _toggleSearch,
-                          ),
-                          const SizedBox(width: 10),
-                          _IconBtn(
-                            icon: Icons.favorite_border_rounded,
-                            onTap: () => context.push(AppRouter.favorites),
+                          const SizedBox(height: 4),
+                          Text(
+                            'What do you want\ncooking today?',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .displayMedium
+                                ?.copyWith(
+                                  height: 1.25,
+                                  fontSize: isTablet
+                                      ? 32
+                                      : (MediaQuery.of(context).size.width * 0.06)
+                                          .clamp(20.0, 26.0),
+                                ),
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  // Large title below
-                  Text(
-                    'What do you want\ncooking today?',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context)
-                        .textTheme
-                        .displayMedium
-                        ?.copyWith(
-                          height: 1.25,
-                          fontSize:
-                              (MediaQuery.of(context).size.width * 0.06)
-                                  .clamp(20.0, 26.0),
-                        ),
+                  const SizedBox(width: 12),
+                  Row(
+                    children: [
+                      _IconBtn(
+                        icon: _searchVisible
+                            ? Icons.close_rounded
+                            : Icons.search_rounded,
+                        onTap: _toggleSearch,
+                      ),
+                      const SizedBox(width: 10),
+                      _IconBtn(
+                        icon: Icons.favorite_border_rounded,
+                        onTap: () => context.push(AppRouter.favorites),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -204,9 +201,9 @@ class _HomeScreenState extends State<HomeScreen>
                 sizeFactor: _searchFade,
                 axisAlignment: -1,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                  padding: EdgeInsets.fromLTRB(hp, 16, hp, 0),
                   child: Container(
-                    height: 48,
+                    height: isTablet ? 54 : 48,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(14),
@@ -299,10 +296,12 @@ class _HomeScreenState extends State<HomeScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: EdgeInsets.symmetric(horizontal: hp),
                         child: Text(
                           'Popular Cuisine',
-                          style: Theme.of(context).textTheme.headlineSmall,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontSize: isTablet ? 22 : null,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -315,6 +314,8 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
           ],
+        ),
+          ),
         ),
       ),
     );
@@ -353,8 +354,9 @@ class _SearchResults extends StatelessWidget {
       );
     }
 
+    final hp = Responsive.horizontalPadding(context);
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+      padding: EdgeInsets.fromLTRB(hp, 0, hp, 32),
       itemCount: vm.searchResults.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, i) {
@@ -520,15 +522,19 @@ class _CuisineGrid extends StatelessWidget {
       );
     }
 
+    final hp = Responsive.horizontalPadding(context);
+    final cols = Responsive.cuisineGridColumns(context);
+    final isTablet = Responsive.isTablet(context);
+
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: vm.refresh,
       child: GridView.builder(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
+        padding: EdgeInsets.fromLTRB(hp, 0, hp, 32),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: cols,
+          mainAxisSpacing: isTablet ? 20 : 16,
+          crossAxisSpacing: isTablet ? 20 : 16,
           childAspectRatio: 1.0,
         ),
         itemCount: vm.cuisines.length + 1,
