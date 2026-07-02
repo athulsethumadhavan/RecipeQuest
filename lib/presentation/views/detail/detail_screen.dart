@@ -29,6 +29,8 @@ class _DetailScreenState extends State<DetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DetailViewModel>().loadDish(widget.dishId);
     });
+    // Preload rewarded ad so it's ready when user taps a language
+    AdService.loadRewardedAd();
   }
 
   @override
@@ -610,9 +612,16 @@ class _DetailScreenState extends State<DetailScreen> {
       );
     }
 
+    // If within 5-minute cooldown, skip the ad and open video directly.
+    if (!AdService.shouldShowAd) {
+      openVideo();
+      return;
+    }
+
+    // Otherwise show a rewarded ad first.
     AdService.showRewardedAd(
-      onRewarded: openVideo,       // ad finished → open in-app player
-      onNotAvailable: openVideo,   // no ad loaded → open in-app player directly
+      onRewarded: openVideo,     // ad watched → open video
+      onNotAvailable: openVideo, // no ad loaded → open video directly
     );
   }
 }
