@@ -12,6 +12,7 @@ import '../../../data/services/auth_service.dart';
 import '../../../data/services/payment_service.dart';
 import '../../viewmodels/home_viewmodel.dart';
 import '../auth/auth_bottom_sheet.dart';
+import 'widgets/app_drawer.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +23,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _titleTapCount = 0;
   bool _searchVisible = false;
   final TextEditingController _searchCtrl = TextEditingController();
@@ -123,6 +125,8 @@ class _HomeScreenState extends State<HomeScreen>
     final isTablet = Responsive.isTablet(context);
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: const AppDrawer(),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -133,50 +137,27 @@ class _HomeScreenState extends State<HomeScreen>
             // ── Header ───────────────────────────────────────────────────────
             Padding(
               padding: EdgeInsets.fromLTRB(hp, isTablet ? 28 : 20, hp, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onDoubleTap: _onTitleDoubleTap,
-                      behavior: HitTestBehavior.opaque,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Hi, Foodie! 👋',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'What do you want\ncooking today?',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .displayMedium
-                                ?.copyWith(
-                                  height: 1.25,
-                                  fontSize: isTablet
-                                      ? 32
-                                      : (MediaQuery.of(context).size.width * 0.06)
-                                          .clamp(20.0, 26.0),
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Row(
                     children: [
+                      _IconBtn(
+                        icon: Icons.menu_rounded,
+                        onTap: () => _scaffoldKey.currentState?.openDrawer(),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Hi, Foodie! 👋',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      const Spacer(),
                       _IconBtn(
                         icon: _searchVisible
                             ? Icons.close_rounded
@@ -189,6 +170,26 @@ class _HomeScreenState extends State<HomeScreen>
                         onTap: () => context.push(AppRouter.favorites),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onDoubleTap: _onTitleDoubleTap,
+                    behavior: HitTestBehavior.opaque,
+                    child: Text(
+                      'What do you want\ncooking today?',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context)
+                          .textTheme
+                          .displayMedium
+                          ?.copyWith(
+                            height: 1.25,
+                            fontSize: isTablet
+                                ? 32
+                                : (MediaQuery.of(context).size.width * 0.06)
+                                    .clamp(20.0, 26.0),
+                          ),
+                    ),
                   ),
                 ],
               ),

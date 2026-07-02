@@ -16,9 +16,11 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   static String get _adUnitId {
     if (Platform.isAndroid) {
-      return 'ca-app-pub-7475228419610805/6447315815';
+      // TODO: replace with real ID before release: ca-app-pub-7475228419610805/6447315815
+      return 'ca-app-pub-3940256099942544/6300978111'; // test
     } else {
-      return 'ca-app-pub-7475228419610805/3558262749';
+      // TODO: replace with real ID before release: ca-app-pub-7475228419610805/3558262749
+      return 'ca-app-pub-3940256099942544/2934735716'; // test
     }
   }
 

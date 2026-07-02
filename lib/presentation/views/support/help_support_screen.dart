@@ -12,60 +12,89 @@ class HelpSupportScreen extends StatefulWidget {
 class _HelpSupportScreenState extends State<HelpSupportScreen> {
   static const _supportEmail = 'athulsethumadhavan+recipeSupport@gmail.com';
 
+  static const _deleteAccountUrl =
+      'https://athulsethumadhavan.github.io/RecipeQuest/delete-account';
+
+  // (q, a, btnLabel?, btnUrl?)
   static const _faqs = [
     (
       q: 'How do I unlock a dish?',
       a: 'Tap on any locked dish and select "Unlock Dish" for \$1. '
           'The dish will be permanently unlocked on your account.',
+      btn: '',
+      url: '',
     ),
     (
       q: 'How do I unlock an entire cuisine?',
       a: 'Open the cuisine page and tap "Unlock All Dishes" for \$10. '
           'This gives you permanent access to every dish in that cuisine.',
+      btn: '',
+      url: '',
     ),
     (
       q: 'Can I watch videos for free?',
       a: 'Yes! Tap "Watch Ad" on any locked video to watch a short rewarded '
           'ad and get free access to that video for the session.',
+      btn: '',
+      url: '',
     ),
     (
       q: 'How do I save a dish to Favourites?',
       a: 'Tap the heart icon on any dish card or detail page. '
           'You need to be signed in for your favourites to sync across devices.',
+      btn: '',
+      url: '',
     ),
     (
       q: 'Will my purchases carry over if I reinstall?',
       a: 'Yes. Sign in with the same account and your unlocked dishes and '
           'cuisines will be restored automatically.',
+      btn: '',
+      url: '',
     ),
     (
       q: 'I lost my purchases after reinstalling. What do I do?',
       a: 'Sign in with your original account. If the issue persists, '
           'tap "Restore Purchases" in the Subscription section of the side menu.',
+      btn: '',
+      url: '',
     ),
     (
       q: 'How do I change my password?',
       a: 'On the Sign In screen, tap "Forgot Password?" and follow the '
           'OTP verification steps to set a new password.',
+      btn: '',
+      url: '',
     ),
     (
       q: 'How do I delete my account?',
-      a: 'Email us at ${'$_supportEmail'} with the subject "Delete Account" '
-          'and we will permanently delete your data within 30 days.',
+      a: 'Submit a deletion request using the form below. Your account and '
+          'all associated data will be permanently deleted within 7 business days.',
+      btn: 'Request Account Deletion',
+      url: _deleteAccountUrl,
     ),
     (
       q: 'Which languages are the cooking videos available in?',
       a: 'Videos are available in English, Hindi, Tamil, Malayalam, Arabic, '
           'German, French, Spanish, Italian, and Chinese.',
+      btn: '',
+      url: '',
     ),
     (
       q: 'The video isn\'t playing. What should I do?',
       a: 'Check your internet connection. If the problem continues, '
           'the video will open in YouTube automatically as a fallback.',
+      btn: '',
+      url: '',
     ),
   ];
 
   int? _expanded;
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
 
   Future<void> _contactSupport() async {
     final uri = Uri(
@@ -221,13 +250,41 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                         firstChild: const SizedBox.shrink(),
                         secondChild: Padding(
                           padding: const EdgeInsets.only(top: 10),
-                          child: Text(
-                            faq.a,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                              height: 1.5,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                faq.a,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                  height: 1.5,
+                                ),
+                              ),
+                              if (faq.url.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _openUrl(faq.url),
+                                    icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                                    label: Text(faq.btn),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                      side: const BorderSide(color: Colors.red),
+                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      textStyle: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                         crossFadeState: isOpen

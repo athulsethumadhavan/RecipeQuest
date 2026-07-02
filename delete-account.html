@@ -162,8 +162,13 @@
           <option value="other">Other</option>
         </select>
 
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Your account password" required />
+
         <label for="notes">Additional notes (optional)</label>
         <textarea id="notes" placeholder="Any additional information…"></textarea>
+
+        <div id="error-msg" style="display:none;color:#E53935;font-size:13px;margin-bottom:14px;"></div>
 
         <button type="submit" id="submit-btn">Request Account Deletion</button>
       </form>
@@ -182,35 +187,62 @@
 
   <footer>© 2024 Recipe Quest · <a href="mailto:athulsethumadhavan@gmail.com" style="color:#4A90E2;">Contact Support</a></footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    function handleSubmit(e) {
+    const SUPABASE_URL  = 'https://pepcxbwambfigqkpszmh.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlcGN4YndhbWJmaWdxa3Bzem1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxODgwNDIsImV4cCI6MjA5Nzc2NDA0Mn0.K5J5lC2tJ06CDPMPayCQjTlvFya99ETmN6qwsi_tozA';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    function showError(msg) {
+      const el = document.getElementById('error-msg');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    function hideError() {
+      document.getElementById('error-msg').style.display = 'none';
+    }
+
+    async function handleSubmit(e) {
       e.preventDefault();
-      const email = document.getElementById('email').value;
-      const name  = document.getElementById('name').value;
-      const reason = document.getElementById('reason').value;
-      const notes = document.getElementById('notes').value;
+      hideError();
 
-      const btn = document.getElementById('submit-btn');
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const btn      = document.getElementById('submit-btn');
+
       btn.disabled = true;
-      btn.textContent = 'Submitting…';
+      btn.textContent = 'Verifying…';
 
-      // Send to Formspree (replace YOUR_FORM_ID with your actual Formspree form ID)
-      fetch('https://formspree.io/f/xbdvzdrj', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ name, email, reason, notes })
-      })
-      .then(res => {
-        document.getElementById('form-section').style.display = 'none';
-        document.getElementById('success-section').style.display = 'block';
-        document.getElementById('confirmed-email').textContent = email;
-      })
-      .catch(() => {
-        // Fallback: show success anyway (email can be processed manually)
-        document.getElementById('form-section').style.display = 'none';
-        document.getElementById('success-section').style.display = 'block';
-        document.getElementById('confirmed-email').textContent = email;
-      });
+      // 1. Sign in to verify identity
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({ email, password });
+
+      if (signInError) {
+        showError('Incorrect email or password. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Request Account Deletion';
+        return;
+      }
+
+      btn.textContent = 'Deleting account…';
+
+      // 2. Delete account via RPC (calls delete_user() SQL function)
+      const { error: deleteError } = await supabase.rpc('delete_user');
+
+      if (deleteError) {
+        showError('Failed to delete account. Please contact support.');
+        btn.disabled = false;
+        btn.textContent = 'Request Account Deletion';
+        await supabase.auth.signOut();
+        return;
+      }
+
+      // 3. Sign out and show success
+      await supabase.auth.signOut();
+      document.getElementById('form-section').style.display = 'none';
+      document.getElementById('success-section').style.display = 'block';
+      document.getElementById('confirmed-email').textContent = email;
     }
   </script>
 
