@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../data/services/auth_service.dart';
+import 'delete_account_sheet.dart';
 
 class HelpSupportScreen extends StatefulWidget {
   const HelpSupportScreen({super.key});
@@ -261,12 +264,13 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                                   height: 1.5,
                                 ),
                               ),
-                              if (faq.url.isNotEmpty) ...[
+                              if (faq.url.isNotEmpty &&
+                                  context.watch<AuthService>().isLoggedIn) ...[
                                 const SizedBox(height: 12),
                                 SizedBox(
                                   width: double.infinity,
                                   child: OutlinedButton.icon(
-                                    onPressed: () => _openUrl(faq.url),
+                                    onPressed: () => showDeleteAccountSheet(context),
                                     icon: const Icon(Icons.delete_outline_rounded, size: 16),
                                     label: Text(faq.btn),
                                     style: OutlinedButton.styleFrom(

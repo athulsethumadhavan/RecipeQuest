@@ -183,6 +183,24 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Permanently delete the current user's account and all associated data.
+  /// Calls the `delete_user` SQL function (SECURITY DEFINER) which removes
+  /// user_favorites, user_profiles, and the auth.users row.
+  /// Returns null on success, or an error message string.
+  Future<String?> deleteAccount() async {
+    try {
+      await _client.rpc('delete_user');
+      await _client.auth.signOut();
+      notifyListeners();
+      return null;
+    } on AuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      debugPrint('[AuthService] deleteAccount error: $e');
+      return 'Failed to delete account. Please try again.';
+    }
+  }
+
   /// Fetch the current user's profile from user_profiles table.
   Future<Map<String, dynamic>?> fetchProfile() async {
     final uid = currentUserId;

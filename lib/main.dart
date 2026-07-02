@@ -86,7 +86,7 @@ class _RecipeQuestAppState extends State<RecipeQuestApp> {
   void initState() {
     super.initState();
 
-    _homeVM    = HomeViewModel(repository: _cuisineRepo, prefRepository: _prefRepo);
+    _homeVM    = HomeViewModel(repository: _cuisineRepo, prefRepository: _prefRepo, authService: AuthService.instance);
     _searchVM  = SearchViewModel(repository: _cuisineRepo);
     _cuisineVM = CuisineViewModel(repository: _cuisineRepo);
     _detailVM  = DetailViewModel(repository: _cuisineRepo, favoritesRepository: _favRepo);

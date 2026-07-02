@@ -243,6 +243,8 @@ class _HomeScreenState extends State<HomeScreen>
                                       color: AppColors.textSecondary,
                                       fontSize: 15),
                               border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
                               isDense: true,
                             ),
                           ),
