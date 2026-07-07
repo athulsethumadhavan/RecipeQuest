@@ -39,7 +39,16 @@ class HomeViewModel extends BaseViewModel {
 
   // ── Init ───────────────────────────────────────────────────────────────────
   void _onPreferencesChanged() => refresh();
-  void _onAuthChanged() => refresh();
+
+  void _onAuthChanged() async {
+    if (_authService.isLoggedIn) {
+      // Fetch user's cuisines from Supabase → notifyListeners → refresh
+      await _prefRepository.onLogin();
+    } else {
+      // Revert to onboarding-selected cuisines → notifyListeners → refresh
+      await _prefRepository.onLogout();
+    }
+  }
 
   Future<void> init() async {
     setLoading();
@@ -48,15 +57,12 @@ class HomeViewModel extends BaseViewModel {
       final selectedIds = await _prefRepository.getSelectedCuisineIds();
       _selectedCuisineIds = selectedIds;
 
-      if (_authService.isLoggedIn) {
-        // Signed in: show all cuisines, purchases tracked via selectedIds
-        _cuisines = all;
-      } else {
-        // Signed out: show only onboarding-selected cuisines
-        _cuisines = selectedIds.isEmpty
-            ? all
-            : all.where((c) => selectedIds.contains(c.id)).toList();
-      }
+      // Logged in → show cuisines from Supabase (user_cuisines table)
+      // Logged out → show only onboarding-selected cuisines
+      // Either way, selectedIds from PreferenceRepository is the source of truth
+      _cuisines = selectedIds.isEmpty
+          ? all
+          : all.where((c) => selectedIds.contains(c.id)).toList();
 
       setSuccess();
     } catch (e) {

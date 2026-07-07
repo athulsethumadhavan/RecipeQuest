@@ -3,7 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/router/app_router.dart';
-import '../../../data/repositories/preference_repository.dart';
+import '../../../data/services/auth_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -41,9 +42,26 @@ class _SplashScreenState extends State<SplashScreen>
 
     Future.delayed(const Duration(milliseconds: 2200), () async {
       if (!mounted) return;
-      final done = await PreferenceRepository().isOnboardingDone();
-      if (mounted) {
-        context.go(done ? AppRouter.home : AppRouter.onboarding);
+
+      if (!AuthService.instance.isLoggedIn) {
+        // Not logged in → must authenticate first
+        context.go(AppRouter.auth);
+        return;
+      }
+
+      // Logged in → check if user has cuisines saved in Supabase
+      try {
+        final uid = AuthService.instance.currentUserId!;
+        final rows = await Supabase.instance.client
+            .from('user_cuisines')
+            .select('cuisine_id')
+            .eq('user_id', uid);
+        final hasCuisines = (rows as List).isNotEmpty;
+        if (!mounted) return;
+        context.go(hasCuisines ? AppRouter.home : AppRouter.onboarding);
+      } catch (_) {
+        if (!mounted) return;
+        context.go(AppRouter.onboarding);
       }
     });
   }

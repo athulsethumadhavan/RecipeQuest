@@ -10,12 +10,17 @@ import '../../presentation/views/cuisine/cuisine_list_screen.dart';
 import '../../presentation/views/cuisine/cuisine_meals_screen.dart';
 import '../../presentation/views/admin/admin_screen.dart';
 import '../../presentation/views/onboarding/cuisine_preference_screen.dart';
+import '../../presentation/views/auth/auth_screen.dart';
+import '../../presentation/views/auth/register_screen.dart';
 import '../../presentation/views/favorites/favorites_screen.dart';
+import '../../data/services/auth_service.dart';
 
 class AppRouter {
   AppRouter._();
 
   static const String splash = '/';
+  static const String auth = '/auth';
+  static const String register = '/register';
   static const String home = '/home';
   static const String search = '/search';
   static const String cuisines = '/cuisines';
@@ -28,11 +33,29 @@ class AppRouter {
 
   static final GoRouter router = GoRouter(
     initialLocation: splash,
+    // Redirect to /auth if the user tries to access protected pages while signed out
+    redirect: (context, state) {
+      final isLoggedIn = AuthService.instance.isLoggedIn;
+      final path = state.matchedLocation;
+      final publicPaths = [splash, auth, register];
+      if (!isLoggedIn && !publicPaths.contains(path)) {
+        return auth;
+      }
+      return null;
+    },
     routes: [
       // Screens without banner ad
       GoRoute(
         path: splash,
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: auth,
+        builder: (context, state) => const AuthScreen(),
+      ),
+      GoRoute(
+        path: register,
+        builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
         path: onboarding,

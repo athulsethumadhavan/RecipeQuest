@@ -67,14 +67,14 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Register a new user with Supabase Auth + insert profile row.
+  /// Register a new user with Supabase Auth.
   /// Returns null on success, or an error message string.
   Future<String?> signUp({
-    required String name,
-    required String phone,
-    required String countryCode,
     required String email,
     required String password,
+    String name = '',
+    String phone = '',
+    String countryCode = '',
   }) async {
     final passwordErr = passwordError(password);
     if (passwordErr != null) return passwordErr;
@@ -83,11 +83,13 @@ class AuthService extends ChangeNotifier {
       final response = await _client.auth.signUp(
         email: email,
         password: password,
-        data: {
-          'name': name.trim(),
-          'phone': phone.trim(),
-          'country_code': countryCode,
-        },
+        data: name.isNotEmpty
+            ? {
+                'name': name.trim(),
+                'phone': phone.trim(),
+                'country_code': countryCode,
+              }
+            : null,
       );
 
       if (response.user?.id == null) {
@@ -106,6 +108,25 @@ class AuthService extends ChangeNotifier {
       return 'Something went wrong. Please try again.';
     }
   }
+
+  /// Resend the sign-up OTP to [email].
+  Future<String?> resendOtp({required String email}) async {
+    try {
+      await _client.auth.resend(type: OtpType.signup, email: email);
+      return null;
+    } on AuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      debugPrint('[AuthService] resendOtp error: $e');
+      return 'Could not resend code. Please try again.';
+    }
+  }
+
+  /// Verify the 6-digit OTP sent to [email] after sign-up.
+  Future<String?> verifyOtp({
+    required String email,
+    required String token,
+  }) => verifySignupOtp(email: email, token: token);
 
   /// Verify the 6-digit OTP sent to [email] after sign-up.
   Future<String?> verifySignupOtp({
