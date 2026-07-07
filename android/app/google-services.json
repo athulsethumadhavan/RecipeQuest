@@ -1,22 +1,21 @@
 {
-  "_README": "REPLACE THIS FILE with the real google-services.json downloaded from Firebase Console → Project Settings → Your Apps → Android app → Download google-services.json",
   "project_info": {
-    "project_number": "YOUR_PROJECT_NUMBER",
-    "project_id": "YOUR_PROJECT_ID",
-    "storage_bucket": "YOUR_PROJECT_ID.appspot.com"
+    "project_number": "667672115988",
+    "project_id": "recipequest-28742",
+    "storage_bucket": "recipequest-28742.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:YOUR_PROJECT_NUMBER:android:XXXXXXXXXXXXXXXX",
+        "mobilesdk_app_id": "1:667672115988:android:a367b1dd150662cd50e001",
         "android_client_info": {
-          "package_name": "com.athul.recipequest"
+          "package_name": "com.atsIOSDev.recipeQuest"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "YOUR_ANDROID_API_KEY"
+          "current_key": "AIzaSyCNz70KArZVjwktEI0OqHsHosh3nYrwkN8"
         }
       ],
       "services": {

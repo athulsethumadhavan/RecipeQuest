@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/router/app_router.dart';
+import '../../../data/services/analytics_service.dart';
 import '../../../data/services/auth_service.dart';
 
 /// Register (sign-up) page.
@@ -124,6 +125,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!mounted) return;
     setState(() => _loading = false);
     if (err == null) {
+      AnalyticsService.instance.logSignUp();
       await _onSuccess();
     } else {
       setState(() => _error = err);

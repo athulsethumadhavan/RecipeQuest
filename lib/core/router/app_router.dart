@@ -14,6 +14,7 @@ import '../../presentation/views/auth/auth_screen.dart';
 import '../../presentation/views/auth/register_screen.dart';
 import '../../presentation/views/onboarding/onboarding_intro_screen.dart';
 import '../../presentation/views/favorites/favorites_screen.dart';
+import '../../data/services/analytics_service.dart';
 import '../../data/services/auth_service.dart';
 
 class AppRouter {
@@ -35,6 +36,7 @@ class AppRouter {
 
   static final GoRouter router = GoRouter(
     initialLocation: splash,
+    observers: [AnalyticsService.instance.observer],
     // Redirect to /auth if the user tries to access protected pages while signed out
     redirect: (context, state) {
       final isLoggedIn = AuthService.instance.isLoggedIn;

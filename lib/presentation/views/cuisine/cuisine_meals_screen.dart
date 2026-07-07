@@ -10,6 +10,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../data/models/dish_model.dart';
 import '../../../data/repositories/favorites_repository.dart';
+import '../../../data/services/analytics_service.dart';
 import '../../viewmodels/cuisine_viewmodel.dart';
 
 const _cardColors = [
@@ -103,6 +104,10 @@ class _CuisineMealsScreenState extends State<CuisineMealsScreen> {
       final cuisine = vm.cuisines.firstWhere(
         (c) => c.id == widget.cuisineId,
         orElse: () => vm.cuisines.first,
+      );
+      AnalyticsService.instance.logCuisineView(
+        cuisineId: cuisine.id,
+        cuisineName: cuisine.name,
       );
       vm.loadDishesByCuisine(cuisine);
     });

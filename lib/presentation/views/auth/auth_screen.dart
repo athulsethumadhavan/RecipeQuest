@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/router/app_router.dart';
+import '../../../data/services/analytics_service.dart';
 import '../../../data/services/auth_service.dart';
 
 /// Full-screen sign-in page.
@@ -79,6 +80,7 @@ class _AuthScreenState extends State<AuthScreen> {
     if (!mounted) return;
     setState(() => _loading = false);
     if (err == null) {
+      AnalyticsService.instance.logLogin();
       await _onSuccess();
     } else {
       setState(() => _error = err);
@@ -131,6 +133,7 @@ class _AuthScreenState extends State<AuthScreen> {
     if (!mounted) return;
     setState(() => _loading = false);
     if (err == null) {
+      AnalyticsService.instance.logPasswordReset();
       setState(() => _step = _Step.forgotDone);
     } else {
       setState(() => _error = err);

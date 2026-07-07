@@ -2,6 +2,7 @@ import '../../data/models/dish_model.dart';
 import '../../data/models/dish_detail_model.dart';
 import '../../data/repositories/cuisine_repository.dart';
 import '../../data/repositories/favorites_repository.dart';
+import '../../data/services/analytics_service.dart';
 import 'base_viewmodel.dart';
 
 class DetailViewModel extends BaseViewModel {
@@ -28,6 +29,11 @@ class DetailViewModel extends BaseViewModel {
       _detail = await _repository.getDishDetail(dishId);
       _isFavorite = await _favoritesRepository.isFavorite(dishId);
       _loadRelated(_detail!.dishId, _detail!.cuisineName);
+      AnalyticsService.instance.logDishView(
+        dishId: _detail!.dishId,
+        dishName: _detail!.dishName,
+        cuisineName: _detail!.cuisineName,
+      );
       setSuccess();
     } catch (e) {
       setError(e.toString());
@@ -62,9 +68,17 @@ class DetailViewModel extends BaseViewModel {
     if (_isFavorite) {
       await _favoritesRepository.removeFavorite(_detail!.dishId);
       _isFavorite = false;
+      AnalyticsService.instance.logFavoriteRemoved(
+        dishId: _detail!.dishId,
+        dishName: _detail!.dishName,
+      );
     } else {
       await _favoritesRepository.addFavorite(dish);
       _isFavorite = true;
+      AnalyticsService.instance.logFavoriteAdded(
+        dishId: _detail!.dishId,
+        dishName: _detail!.dishName,
+      );
     }
     notifyListeners();
   }

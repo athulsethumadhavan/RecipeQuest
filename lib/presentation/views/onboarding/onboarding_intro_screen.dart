@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/router/app_router.dart';
+import '../../../data/services/analytics_service.dart';
 
 /// Shown once on first install, before sign-in.
 /// Marks 'intro_seen' in SharedPreferences when dismissed.
@@ -46,7 +47,12 @@ class _OnboardingIntroScreenState extends State<OnboardingIntroScreen> {
     ),
   ];
 
-  Future<void> _finish() async {
+  Future<void> _finish({bool skipped = false}) async {
+    if (skipped) {
+      AnalyticsService.instance.logIntroSkipped(_currentPage);
+    } else {
+      AnalyticsService.instance.logIntroCompleted();
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyIntroSeen, true);
     if (!mounted) return;
@@ -88,7 +94,7 @@ class _OnboardingIntroScreenState extends State<OnboardingIntroScreen> {
                   opacity: isLast ? 0 : 1,
                   duration: const Duration(milliseconds: 200),
                   child: TextButton(
-                    onPressed: isLast ? null : _finish,
+                    onPressed: isLast ? null : () => _finish(skipped: true),
                     child: const Text(
                       'Skip',
                       style: TextStyle(
@@ -107,7 +113,10 @@ class _OnboardingIntroScreenState extends State<OnboardingIntroScreen> {
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: _slides.length,
-                onPageChanged: (i) => setState(() => _currentPage = i),
+                onPageChanged: (i) {
+                  setState(() => _currentPage = i);
+                  AnalyticsService.instance.logIntroSlideView(i);
+                },
                 itemBuilder: (context, index) =>
                     _SlidePage(slide: _slides[index]),
               ),
