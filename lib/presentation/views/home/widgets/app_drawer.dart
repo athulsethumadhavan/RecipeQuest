@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../data/services/analytics_service.dart';
 import '../../../../data/services/auth_service.dart';
 import '../../auth/auth_bottom_sheet.dart';
 import '../../support/help_support_screen.dart';
@@ -137,6 +138,7 @@ class AppDrawer extends StatelessWidget {
                 labelColor: AppColors.error,
                 onTap: () async {
                   Navigator.pop(context);
+                  AnalyticsService.instance.logLogout();
                   await AuthService.instance.signOut();
                 },
               )

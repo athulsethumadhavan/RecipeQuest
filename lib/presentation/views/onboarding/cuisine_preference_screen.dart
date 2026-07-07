@@ -8,6 +8,7 @@ import '../../../data/models/cuisine_model.dart';
 import '../../../data/repositories/cuisine_repository.dart';
 import '../../../data/repositories/favorites_repository.dart';
 import '../../../data/repositories/preference_repository.dart';
+import '../../../data/services/analytics_service.dart';
 import '../../../data/services/auth_service.dart';
 import '../../../data/services/payment_service.dart';
 import '../auth/auth_bottom_sheet.dart';
@@ -164,6 +165,7 @@ class _CuisinePreferenceScreenState extends State<CuisinePreferenceScreen> {
     // Onboarding or no new cuisines selected — just save
     setState(() => _saving = true);
     await _prefRepo.completeOnboarding(ids);
+    AnalyticsService.instance.logCuisineSelectionCompleted(ids.length);
     if (mounted) {
       if (widget.isEditing) {
         context.pop();

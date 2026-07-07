@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/router/app_router.dart';
 import '../../../data/services/auth_service.dart';
+import '../../../data/services/force_update_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -44,6 +46,21 @@ class _SplashScreenState extends State<SplashScreen>
     Future.delayed(const Duration(milliseconds: 2200), () async {
       if (!mounted) return;
 
+      // ── Update check ─────────────────────────────────────────────────────
+      final updateStatus = await ForceUpdateService.instance.checkUpdate();
+      if (!mounted) return;
+
+      if (updateStatus == UpdateStatus.required) {
+        _showUpdateDialog(force: true);
+        return; // block navigation — must update
+      }
+
+      if (updateStatus == UpdateStatus.optional) {
+        // Show optional dialog, then continue routing when dismissed
+        await _showUpdateDialog(force: false);
+        if (!mounted) return;
+      }
+
       final prefs = await SharedPreferences.getInstance();
       final introSeen = prefs.getBool('intro_seen') ?? false;
 
@@ -76,6 +93,68 @@ class _SplashScreenState extends State<SplashScreen>
         context.go(AppRouter.onboarding);
       }
     });
+  }
+
+  /// Shows a mandatory or optional update dialog.
+  /// Returns a Future that completes when the dialog is dismissed
+  /// (only possible for optional updates).
+  Future<void> _showUpdateDialog({required bool force}) {
+    return showDialog(
+      context: context,
+      barrierDismissible: !force,
+      builder: (ctx) => PopScope(
+        canPop: !force, // Android back button: blocked for force, allowed for optional
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            force ? 'Update Required' : 'Update Available',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          content: Text(
+            force
+                ? 'A new version of Recipe Quest is available. '
+                  'Please update to continue using the app.'
+                : 'A new version of Recipe Quest is available with '
+                  'improvements and bug fixes. Would you like to update?',
+          ),
+          actions: [
+            // "Not Now" — only shown for optional updates
+            if (!force)
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text(
+                  'Not Now',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(
+                    vertical: 12, horizontal: 24),
+              ),
+              onPressed: () async {
+                final uri = Uri.parse(ForceUpdateService.instance.storeUrl);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+              child: const Text(
+                'Update Now',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override

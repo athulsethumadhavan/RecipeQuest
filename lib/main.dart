@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/constants/supabase_config.dart';
@@ -9,6 +11,7 @@ import 'core/theme/app_theme.dart';
 import 'data/database/app_database.dart';
 import 'data/services/sync_service.dart';
 import 'data/services/ad_service.dart';
+import 'data/services/analytics_service.dart';
 import 'data/services/auth_service.dart';
 import 'data/services/payment_service.dart';
 import 'data/services/realtime_sync_service.dart';
@@ -22,6 +25,8 @@ import 'presentation/viewmodels/cuisine_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Suppress noisy WebView logs from youtube_player_flutter (VideoTime, etc.)
   final _originalDebugPrint = debugPrint;
