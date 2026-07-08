@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../data/services/analytics_service.dart';
 import '../../../../data/services/auth_service.dart';
+import '../../../../data/services/payment_service.dart';
 import '../../auth/auth_bottom_sheet.dart';
 import '../../support/help_support_screen.dart';
 
@@ -176,6 +177,7 @@ class AppDrawer extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (_) => const _SubscriptionSheet(),
     );
   }
@@ -519,24 +521,161 @@ class _ProfileRow extends StatelessWidget {
 
 // ── Subscription sheet ───────────────────────────────────────────────────────
 
-class _SubscriptionSheet extends StatelessWidget {
+class _SubscriptionSheet extends StatefulWidget {
   const _SubscriptionSheet();
+  @override
+  State<_SubscriptionSheet> createState() => _SubscriptionSheetState();
+}
+
+class _SubscriptionSheetState extends State<_SubscriptionSheet>
+    with SingleTickerProviderStateMixin {
+  bool _loading = false;
+  late final AnimationController _animCtrl;
+
+  // Slide to page 2 (ad-free detail)
+  void _openAdFree() => _animCtrl.forward();
+  // Slide back to page 1 (subscription list)
+  void _goBack()     => _animCtrl.reverse();
+
+  @override
+  void initState() {
+    super.initState();
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _subscribeAdFree() async {
+    setState(() => _loading = true);
+    await PaymentService.purchaseAdFree(
+      onSuccess: () {
+        if (!mounted) return;
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ad-free activated! Enjoy Recipe Quest.')),
+        );
+      },
+      onFailed: () {
+        if (!mounted) return;
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Purchase failed or cancelled.')),
+        );
+      },
+    );
+    if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _restore() async {
+    setState(() => _loading = true);
+    await PaymentService.restorePurchases(
+      onSuccess: () {
+        if (!mounted) return;
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Purchase restored!')),
+        );
+      },
+      onFailed: () {
+        if (!mounted) return;
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No previous purchase found.')),
+        );
+      },
+    );
+    if (mounted) setState(() => _loading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).viewInsets.bottom + 32;
+
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Center(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(24, 16, 24, bottomPad),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final w = constraints.maxWidth;
+            return ClipRect(
+              // Both pages sit side-by-side in a Row that is exactly 2× wide.
+              // IntrinsicHeight measures both and sets the container to the
+              // taller one, so both pages are always the same height.
+              child: IntrinsicHeight(
+                // Stack sizes to the tallest child (the detail page),
+                // so both pages are always the same height.
+                // FractionalTranslation moves BOTH the visual AND
+                // the hit-test region, so taps work on every widget.
+                child: AnimatedBuilder(
+                  animation: _animCtrl,
+                  builder: (ctx, _) {
+                    final t = CurvedAnimation(
+                      parent: _animCtrl,
+                      curve: Curves.easeOutCubic,
+                    ).value;
+                    return Stack(
+                      children: [
+                        // Page 1 — slides out to the left
+                        FractionalTranslation(
+                          translation: Offset(-t, 0),
+                          child: SizedBox(
+                            width: w,
+                            child: _SubscriptionMainPage(
+                                onRemoveAdsTap: _openAdFree),
+                          ),
+                        ),
+                        // Page 2 — slides in from the right
+                        FractionalTranslation(
+                          translation: Offset(1.0 - t, 0),
+                          child: SizedBox(
+                            width: w,
+                            child: _AdFreeDetailPage(
+                              loading: _loading,
+                              onBack: _goBack,
+                              onSubscribe: _subscribeAdFree,
+                              onRestore: _restore,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// ── Page 1: subscription list ────────────────────────────────────────────────
+
+class _SubscriptionMainPage extends StatelessWidget {
+  final VoidCallback onRemoveAdsTap;
+  const _SubscriptionMainPage({super.key, required this.onRemoveAdsTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Handle
+        Center(
             child: Container(
-              width: 40,
-              height: 4,
+              width: 40, height: 4,
               decoration: BoxDecoration(
                   color: AppColors.divider,
                   borderRadius: BorderRadius.circular(2)),
@@ -551,13 +690,11 @@ class _SubscriptionSheet extends StatelessWidget {
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary)),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           const Text(
-            'Unlock individual dishes for \$1 or entire cuisines for \$10. '
-            'All purchases are one-time and yours forever.',
+            'Unlock dishes, cuisines, or go completely ad-free.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 24),
           _SubTile(
@@ -570,6 +707,74 @@ class _SubscriptionSheet extends StatelessWidget {
             icon: Icons.public_rounded,
             title: 'Cuisine Unlock',
             subtitle: '\$10 per cuisine — all dishes included',
+          ),
+          const SizedBox(height: 10),
+          // Remove Ads card — navigates to detail page
+          ValueListenableBuilder<bool>(
+            valueListenable: PaymentService.adFreeNotifier,
+            builder: (context, isAdFree, _) => GestureDetector(
+              onTap: onRemoveAdsTap,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isAdFree
+                      ? Colors.green.withOpacity(0.06)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isAdFree ? Colors.green : AppColors.divider,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        color: (isAdFree ? Colors.green : AppColors.primary)
+                            .withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        isAdFree
+                            ? Icons.check_circle_rounded
+                            : Icons.block_rounded,
+                        color:
+                            isAdFree ? Colors.green : AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isAdFree ? 'Remove Ads (Active)' : 'Remove Ads',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: isAdFree
+                                  ? Colors.green
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            isAdFree
+                                ? 'You\'re enjoying an ad-free experience'
+                                : '${PaymentService.adFreeDisplayPrice}/month — no banner or video ads',
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded,
+                        color: AppColors.textHint, size: 20),
+                  ],
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 24),
           SizedBox(
@@ -588,6 +793,202 @@ class _SubscriptionSheet extends StatelessWidget {
                   style: TextStyle(fontWeight: FontWeight.w700)),
             ),
           ),
+        ],
+      );
+  }
+}
+
+// ── Page 2: ad-free detail ────────────────────────────────────────────────────
+
+class _AdFreeDetailPage extends StatelessWidget {
+  final bool loading;
+  final VoidCallback onBack;
+  final VoidCallback onSubscribe;
+  final VoidCallback onRestore;
+
+  const _AdFreeDetailPage({
+    super.key,
+    required this.loading,
+    required this.onBack,
+    required this.onSubscribe,
+    required this.onRestore,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isAdFree = PaymentService.isAdFree;
+    final price    = PaymentService.adFreeDisplayPrice;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+          // Handle + back row
+          Center(
+            child: Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: onBack,
+            child: const Row(
+              children: [
+                Icon(Icons.arrow_back_ios_new_rounded,
+                    size: 16, color: AppColors.primary),
+                SizedBox(width: 4),
+                Text('Subscriptions',
+                    style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Icon + title
+          Center(
+            child: Column(
+              children: [
+                Container(
+                  width: 72, height: 72,
+                  decoration: BoxDecoration(
+                    color: isAdFree
+                        ? Colors.green.withOpacity(0.12)
+                        : AppColors.primary.withOpacity(0.10),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isAdFree
+                        ? Icons.check_circle_rounded
+                        : Icons.block_rounded,
+                    color: isAdFree ? Colors.green : AppColors.primary,
+                    size: 36,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  isAdFree ? 'Ad-Free is Active!' : 'Remove Ads',
+                  style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  isAdFree
+                      ? 'You\'re enjoying a completely ad-free experience.\nYour subscription renews monthly.'
+                      : 'Enjoy Recipe Quest without any ads\nfor just $price/month.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                      height: 1.5),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Feature list
+          _FeatureRow(
+              icon: Icons.block_rounded, label: 'No banner ads'),
+          _FeatureRow(
+              icon: Icons.smart_display_outlined,
+              label: 'No video ads before recipes'),
+          _FeatureRow(
+              icon: Icons.autorenew_rounded,
+              label: 'Auto-renews monthly'),
+          _FeatureRow(
+              icon: Icons.cancel_outlined,
+              label: 'Cancel anytime from App Store / Play Store'),
+
+          const SizedBox(height: 28),
+
+          if (!isAdFree) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: loading ? null : onSubscribe,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
+                ),
+                child: loading
+                    ? const SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2))
+                    : Text(
+                        'Subscribe for $price/month',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 15),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Center(
+              child: TextButton(
+                onPressed: loading ? null : onRestore,
+                child: const Text('Restore Purchase',
+                    style: TextStyle(color: AppColors.textSecondary)),
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Center(
+              child: Text(
+                'Subscription auto-renews. Cancel anytime.',
+                style: TextStyle(fontSize: 10, color: AppColors.textHint),
+              ),
+            ),
+          ] else ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
+                ),
+                child: const Text('Great, thanks!',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ],
+        ],
+      );
+  }
+}
+
+class _FeatureRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _FeatureRow({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: AppColors.primary),
+          const SizedBox(width: 10),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 13, color: AppColors.textPrimary)),
         ],
       ),
     );
