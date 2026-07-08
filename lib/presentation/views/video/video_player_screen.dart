@@ -50,8 +50,28 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   void _onPlayerStateChanged() {
     if (_controller.value.hasError) {
-      _openInYouTube();
+      _handleEmbedError();
     }
+  }
+
+  Future<void> _handleEmbedError() async {
+    _controller.removeListener(_onPlayerStateChanged);
+    _restorePortrait();
+    if (!mounted) return;
+
+    // Show a brief message explaining why we're opening YouTube
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'This video cannot be embedded. Opening in YouTube…',
+        ),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
+    await _openInYouTube();
   }
 
   Future<void> _close() async {
@@ -83,7 +103,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
 
-    if (mounted) Navigator.pop(context);
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -140,6 +160,41 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   ),
                   child: const Icon(Icons.close_rounded,
                       color: Colors.white, size: 22),
+                ),
+              ),
+            ),
+          ),
+
+          // YouTube attribution — bottom right
+          Positioned(
+            bottom: 12,
+            right: 12,
+            child: SafeArea(
+              child: GestureDetector(
+                onTap: _openInYouTube,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.65),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.play_circle_fill_rounded,
+                          color: Color(0xFFFF0000), size: 14),
+                      SizedBox(width: 5),
+                      Text(
+                        'Watch on YouTube',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

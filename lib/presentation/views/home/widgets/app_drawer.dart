@@ -203,6 +203,21 @@ class AppDrawer extends StatelessWidget {
           'guides, and save your favourites.',
           style: TextStyle(fontSize: 14, height: 1.5),
         ),
+        SizedBox(height: 16),
+        Divider(),
+        SizedBox(height: 8),
+        Text(
+          'Video Content',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+        ),
+        SizedBox(height: 4),
+        Text(
+          'Recipe videos in this app are sourced from YouTube and remain '
+          'the property of their respective creators. Recipe Quest does not '
+          'own or host any video content. Videos are streamed directly from '
+          'YouTube via their official embedded player.',
+          style: TextStyle(fontSize: 12, height: 1.5, color: Colors.grey),
+        ),
       ],
     );
   }
