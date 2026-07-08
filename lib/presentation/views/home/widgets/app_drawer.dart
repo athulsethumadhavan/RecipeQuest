@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../data/services/analytics_service.dart';
@@ -20,6 +21,20 @@ class AppDrawer extends StatelessWidget {
   Future<void> _launch(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  void _shareApp(BuildContext context) {
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box != null
+        ? box.localToGlobal(Offset.zero) & box.size
+        : const Rect.fromLTWH(0, 0, 100, 100);
+    Share.share(
+      '🍽️ Check out Recipe Quest — discover delicious recipes from cuisines around the world!\n\n'
+      'iOS: $_appStoreUrl\n'
+      'Android: $_playStoreUrl',
+      subject: 'Recipe Quest App',
+      sharePositionOrigin: origin,
+    );
   }
 
   // ── Build ────────────────────────────────────────────────────────────────
@@ -114,6 +129,11 @@ class AppDrawer extends StatelessWidget {
                         ),
                       );
                     },
+                  ),
+                  _DrawerTile(
+                    icon: Icons.share_rounded,
+                    label: 'Share App',
+                    onTap: () => _shareApp(context),
                   ),
                   _DrawerTile(
                     icon: Icons.star_outline_rounded,
