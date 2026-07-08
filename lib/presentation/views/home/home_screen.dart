@@ -8,6 +8,7 @@ import '../../../core/utils/responsive.dart';
 import '../../../data/models/cuisine_model.dart';
 import '../../../data/models/dish_model.dart';
 import '../../../data/repositories/favorites_repository.dart';
+import '../../../data/services/analytics_service.dart';
 import '../../../data/services/auth_service.dart';
 import '../../../data/services/payment_service.dart';
 import '../../viewmodels/home_viewmodel.dart';
@@ -28,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen>
   bool _searchVisible = false;
   final TextEditingController _searchCtrl = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
+  String _lastLoggedQuery = '';
 
   late final AnimationController _searchAnim;
   late final Animation<double> _searchFade;
@@ -226,8 +228,15 @@ class _HomeScreenState extends State<HomeScreen>
                           child: TextField(
                             controller: _searchCtrl,
                             focusNode: _searchFocus,
-                            onChanged: (q) =>
-                                context.read<HomeViewModel>().search(q),
+                            onChanged: (q) {
+                              context.read<HomeViewModel>().search(q);
+                              // Log search when query is 3+ chars and different
+                              if (q.trim().length >= 3 &&
+                                  q.trim() != _lastLoggedQuery) {
+                                _lastLoggedQuery = q.trim();
+                                AnalyticsService.instance.logSearch(q.trim());
+                              }
+                            },
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium

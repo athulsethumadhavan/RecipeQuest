@@ -1,14 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'payment_service.dart';
 
 class AdService {
   AdService._();
 
-  // TODO: replace with real IDs before release:
-  //   Android: ca-app-pub-7475228419610805/7945857057
-  //   iOS:     ca-app-pub-7475228419610805/4333915106
-  static const _androidRewardedId = 'ca-app-pub-3940256099942544/5224354917'; // test
-  static const _iosRewardedId     = 'ca-app-pub-3940256099942544/1712485313'; // test
+  static const _androidRewardedId = 'ca-app-pub-2018956823856869/3980940742';
+  static const _iosRewardedId     = 'ca-app-pub-2018956823856869/4557701417';
 
   static String get _adUnitId =>
       defaultTargetPlatform == TargetPlatform.iOS
@@ -23,10 +21,12 @@ class AdService {
 
   static const _adCooldown = Duration(minutes: 5);
 
-  /// Returns true if enough time has passed since the last rewarded ad.
+  /// Returns true if a rewarded ad should be shown.
+  /// False when the user has an active ad-free subscription OR cooldown is active.
   static bool get shouldShowAd =>
-      _lastAdTime == null ||
-      DateTime.now().difference(_lastAdTime!) >= _adCooldown;
+      !PaymentService.isAdFree &&
+      (_lastAdTime == null ||
+          DateTime.now().difference(_lastAdTime!) >= _adCooldown);
 
   /// Call this after the user earns the reward to record the time.
   static void _recordAdShown() => _lastAdTime = DateTime.now();
