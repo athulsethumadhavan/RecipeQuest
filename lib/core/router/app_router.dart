@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 import '../../data/models/dish_model.dart';
+import '../../presentation/viewmodels/detail_viewmodel.dart';
 import '../../presentation/views/splash/splash_screen.dart';
 import '../../presentation/views/home/home_screen.dart';
 import '../../presentation/views/search/search_screen.dart';
@@ -74,7 +76,10 @@ class AppRouter {
         builder: (context, state) {
           final id = int.parse(state.pathParameters['id']!);
           final dish = state.extra as Dish?;
-          return DetailScreen(dishId: id, preloadedDish: dish);
+          return ChangeNotifierProvider(
+            create: (_) => DetailViewModel(),
+            child: DetailScreen(dishId: id, preloadedDish: dish),
+          );
         },
       ),
       GoRoute(

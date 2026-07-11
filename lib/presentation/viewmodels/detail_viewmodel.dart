@@ -28,7 +28,7 @@ class DetailViewModel extends BaseViewModel {
     try {
       _detail = await _repository.getDishDetail(dishId);
       _isFavorite = await _favoritesRepository.isFavorite(dishId);
-      _loadRelated(_detail!.dishId, _detail!.cuisineName);
+      _loadRelated(_detail!.dishId, _detail!.cuisineId);
       AnalyticsService.instance.logDishView(
         dishId: _detail!.dishId,
         dishName: _detail!.dishName,
@@ -40,16 +40,9 @@ class DetailViewModel extends BaseViewModel {
     }
   }
 
-  Future<void> _loadRelated(int dishId, String cuisineName) async {
+  Future<void> _loadRelated(int dishId, int cuisineId) async {
     try {
-      // Get cuisine id from the cuisines list
-      final cuisines = await CuisineRepository().getCuisines();
-      final cuisine = cuisines.firstWhere(
-        (c) => c.name == cuisineName,
-        orElse: () => cuisines.first,
-      );
-      _relatedDishes =
-          await _repository.getRelatedDishes(dishId, cuisine.id);
+      _relatedDishes = await _repository.getRelatedDishes(dishId, cuisineId);
       notifyListeners();
     } catch (_) {}
   }
@@ -58,7 +51,7 @@ class DetailViewModel extends BaseViewModel {
     if (_detail == null) return;
     final dish = Dish(
       id: _detail!.dishId,
-      cuisineId: 0,
+      cuisineId: _detail!.cuisineId,
       name: _detail!.dishName,
       thumbnailUrl: _detail!.thumbnailUrl,
       categories: _detail!.categories,

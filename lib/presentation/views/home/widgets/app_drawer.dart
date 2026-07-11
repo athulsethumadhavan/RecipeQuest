@@ -690,7 +690,7 @@ class _SubscriptionMainPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: MainAxisSize.max,
       children: [
         // Handle
         Center(
@@ -796,7 +796,7 @@ class _SubscriptionMainPage extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const Spacer(),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -840,7 +840,7 @@ class _AdFreeDetailPage extends StatelessWidget {
     final price    = PaymentService.adFreeDisplayPrice;
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: MainAxisSize.max,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
           // Handle + back row
@@ -928,7 +928,7 @@ class _AdFreeDetailPage extends StatelessWidget {
               icon: Icons.cancel_outlined,
               label: 'Cancel anytime from App Store / Play Store'),
 
-          const SizedBox(height: 28),
+          const Spacer(),
 
           if (!isAdFree) ...[
             SizedBox(

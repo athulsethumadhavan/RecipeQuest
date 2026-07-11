@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Matches AppTheme.primary -->
-    <color name="launch_background">#E65100</color>
-    <color name="ic_launcher_background">#2F8BE6</color>
-    <!-- Status bar colour (set in MainActivity if needed) -->
-    <color name="colorPrimary">#E65100</color>
-    <color name="colorPrimaryDark">#BF360C</color>
-    <color name="colorAccent">#FFA726</color>
+    <!-- Matches AppColors.primary (#4A90E2) -->
+    <color name="launch_background">#4A90E2</color>
+    <color name="ic_launcher_background">#4A90E2</color>
+    <color name="colorPrimary">#4A90E2</color>
+    <color name="colorPrimaryDark">#2F74CC</color>
+    <color name="colorAccent">#F9C846</color>
 </resources>

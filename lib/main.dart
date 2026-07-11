@@ -8,18 +8,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/constants/supabase_config.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'data/database/app_database.dart';
-import 'data/services/sync_service.dart';
 import 'data/services/ad_service.dart';
-import 'data/services/analytics_service.dart';
 import 'data/services/auth_service.dart';
 import 'data/services/payment_service.dart';
-import 'data/services/realtime_sync_service.dart';
 import 'data/repositories/cuisine_repository.dart';
 import 'data/repositories/favorites_repository.dart';
 import 'data/repositories/preference_repository.dart';
 import 'presentation/viewmodels/home_viewmodel.dart';
-import 'presentation/viewmodels/detail_viewmodel.dart';
 import 'presentation/viewmodels/search_viewmodel.dart';
 import 'presentation/viewmodels/cuisine_viewmodel.dart';
 
@@ -28,30 +23,22 @@ void main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Suppress noisy WebView logs from youtube_player_flutter (VideoTime, etc.)
-  final _originalDebugPrint = debugPrint;
+  // Suppress noisy WebView logs from youtube_player_flutter
+  final originalDebugPrint = debugPrint;
   debugPrint = (String? message, {int? wrapWidth}) {
     if (message != null &&
         (message.contains('VideoTime') ||
          message.contains('calling "Video') ||
          message.contains('WebView ID'))) {
-      return; // drop it
+      return;
     }
-    _originalDebugPrint(message, wrapWidth: wrapWidth);
+    originalDebugPrint(message, wrapWidth: wrapWidth);
   };
 
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
   );
-
-  await AppDatabase.database;
-
-  try {
-    await SyncService.sync();
-  } catch (e, st) {
-    debugPrint('[SyncService] error: $e\n$st');
-  }
 
   await MobileAds.instance.initialize();
   AdService.loadRewardedAd();
@@ -85,7 +72,6 @@ class _RecipeQuestAppState extends State<RecipeQuestApp> {
   late final HomeViewModel     _homeVM;
   late final SearchViewModel   _searchVM;
   late final CuisineViewModel  _cuisineVM;
-  late final DetailViewModel   _detailVM;
 
   @override
   void initState() {
@@ -94,29 +80,15 @@ class _RecipeQuestAppState extends State<RecipeQuestApp> {
     _homeVM    = HomeViewModel(repository: _cuisineRepo, prefRepository: _prefRepo, authService: AuthService.instance);
     _searchVM  = SearchViewModel(repository: _cuisineRepo);
     _cuisineVM = CuisineViewModel(repository: _cuisineRepo);
-    _detailVM  = DetailViewModel(repository: _cuisineRepo, favoritesRepository: _favRepo);
 
-    // Subscribe to Supabase Realtime — re-syncs SQLite on any table change.
-    RealtimeSyncService.start(onSynced: _onRemoteDataChanged);
-
-    // Pre-load favorites (merges with Supabase if already logged in)
     _favRepo.ensureLoaded();
-  }
-
-  /// Called on the main thread after every successful Realtime-triggered sync.
-  void _onRemoteDataChanged() {
-    _homeVM.refresh();
-    _searchVM.refresh();
-    _cuisineVM.refresh();
   }
 
   @override
   void dispose() {
-    RealtimeSyncService.stop();
     _homeVM.dispose();
     _searchVM.dispose();
     _cuisineVM.dispose();
-    _detailVM.dispose();
     super.dispose();
   }
 
@@ -129,7 +101,6 @@ class _RecipeQuestAppState extends State<RecipeQuestApp> {
         ChangeNotifierProvider<FavoritesRepository>.value(value: _favRepo),
         ChangeNotifierProvider<PreferenceRepository>.value(value: _prefRepo),
         ChangeNotifierProvider<HomeViewModel>.value(value: _homeVM),
-        ChangeNotifierProvider<DetailViewModel>.value(value: _detailVM),
         ChangeNotifierProvider<SearchViewModel>.value(value: _searchVM),
         ChangeNotifierProvider<CuisineViewModel>.value(value: _cuisineVM),
       ],

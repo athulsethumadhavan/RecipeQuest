@@ -37,7 +37,7 @@ class _DetailScreenState extends State<DetailScreen> {
   Widget build(BuildContext context) {
     return Consumer<DetailViewModel>(
       builder: (context, vm, _) {
-        if (vm.isLoading) {
+        if (vm.isLoading || (!vm.hasError && vm.detail == null)) {
           return Scaffold(
             body: Stack(
               children: [

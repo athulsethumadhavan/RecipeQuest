@@ -8,8 +8,8 @@ class DishIngredient {
 
   factory DishIngredient.fromMap(Map<String, dynamic> map) {
     return DishIngredient(
-      name: map['name'] as String,
-      measure: map['measure'] as String,
+      name: (map['name'] as String?) ?? '',
+      measure: (map['measure'] as String?) ?? '',
     );
   }
 }
@@ -17,6 +17,7 @@ class DishIngredient {
 class DishDetail {
   final int id;
   final int dishId;
+  final int cuisineId;
   final String dishName;
   final String thumbnailUrl;
   final String cuisineName;
@@ -41,6 +42,7 @@ class DishDetail {
   const DishDetail({
     required this.id,
     required this.dishId,
+    required this.cuisineId,
     required this.dishName,
     required this.thumbnailUrl,
     required this.cuisineName,
@@ -65,65 +67,85 @@ class DishDetail {
   String get primaryCategory => categories.isNotEmpty ? categories.first : '';
 
   /// Returns only languages that have a non-empty URL.
-  /// Used by the language picker — keys are display names, values are URLs.
   Map<String, String> get availableVideoUrls {
     final map = <String, String>{};
-    if (videoUrlEn?.isNotEmpty == true) map['English']    = videoUrlEn!;
-    if (videoUrlHi?.isNotEmpty == true) map['Hindi']      = videoUrlHi!;
-    if (videoUrlTa?.isNotEmpty == true) map['Tamil']      = videoUrlTa!;
-    if (videoUrlMl?.isNotEmpty == true) map['Malayalam']  = videoUrlMl!;
-    if (videoUrlAr?.isNotEmpty == true) map['Arabic']     = videoUrlAr!;
-    if (videoUrlDe?.isNotEmpty == true) map['German']     = videoUrlDe!;
-    if (videoUrlFr?.isNotEmpty == true) map['French']     = videoUrlFr!;
-    if (videoUrlEs?.isNotEmpty == true) map['Spanish']    = videoUrlEs!;
-    if (videoUrlIt?.isNotEmpty == true) map['Italian']    = videoUrlIt!;
-    if (videoUrlZh?.isNotEmpty == true) map['Chinese']    = videoUrlZh!;
+    if (videoUrlEn?.isNotEmpty == true) map['English']   = videoUrlEn!;
+    if (videoUrlHi?.isNotEmpty == true) map['Hindi']     = videoUrlHi!;
+    if (videoUrlTa?.isNotEmpty == true) map['Tamil']     = videoUrlTa!;
+    if (videoUrlMl?.isNotEmpty == true) map['Malayalam'] = videoUrlMl!;
+    if (videoUrlAr?.isNotEmpty == true) map['Arabic']    = videoUrlAr!;
+    if (videoUrlDe?.isNotEmpty == true) map['German']    = videoUrlDe!;
+    if (videoUrlFr?.isNotEmpty == true) map['French']    = videoUrlFr!;
+    if (videoUrlEs?.isNotEmpty == true) map['Spanish']   = videoUrlEs!;
+    if (videoUrlIt?.isNotEmpty == true) map['Italian']   = videoUrlIt!;
+    if (videoUrlZh?.isNotEmpty == true) map['Chinese']   = videoUrlZh!;
     return map;
   }
 
   bool get hasVideo => availableVideoUrls.isNotEmpty;
-
-  factory DishDetail.fromMap(Map<String, dynamic> map) {
-    final rawIngredients =
-        jsonDecode(map['ingredients'] as String) as List<dynamic>;
-    final raw = (map['categories_raw'] as String?) ?? '';
-    return DishDetail(
-      id: map['detail_id'] as int,
-      dishId: map['dish_id'] as int,
-      dishName: map['name'] as String,
-      thumbnailUrl: map['thumbnail_url'] as String,
-      cuisineName: map['cuisine_name'] as String? ?? '',
-      categories: raw.isEmpty
-          ? []
-          : raw.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
-      shortDescription: map['short_description'] as String,
-      fullDescription: map['full_description'] as String,
-      ingredients: rawIngredients.map((e) {
-        if (e is Map<String, dynamic>) {
-          // Legacy format: {"name": "...", "measure": "..."}
-          return DishIngredient.fromMap(e);
-        } else {
-          // New format: plain string e.g. "400g spaghetti"
-          return DishIngredient(name: e as String, measure: '');
-        }
-      }).toList(),
-      preparation: map['preparation'] as String,
-      videoUrlEn: map['video_url_en'] as String?,
-      videoUrlHi: map['video_url_hi'] as String?,
-      videoUrlTa: map['video_url_ta'] as String?,
-      videoUrlMl: map['video_url_ml'] as String?,
-      videoUrlAr: map['video_url_ar'] as String?,
-      videoUrlDe: map['video_url_de'] as String?,
-      videoUrlFr: map['video_url_fr'] as String?,
-      videoUrlEs: map['video_url_es'] as String?,
-      videoUrlIt: map['video_url_it'] as String?,
-      videoUrlZh: map['video_url_zh'] as String?,
-    );
-  }
 
   List<String> get preparationSteps => preparation
       .split('\n')
       .map((s) => s.trim())
       .where((s) => s.isNotEmpty)
       .toList();
+
+  /// Deserialise from a Supabase response with embedded `dishes` relation
+  /// that itself embeds `cuisines(name)` and `dish_categories(categories(name))`.
+  factory DishDetail.fromSupabase(Map<String, dynamic> map) {
+    final dishData       = map['dishes'] as Map<String, dynamic>? ?? {};
+    final cuisineData    = dishData['cuisines'] as Map<String, dynamic>?;
+    final dishCategories = dishData['dish_categories'] as List<dynamic>? ?? [];
+
+    final categories = dishCategories
+        .map((dc) {
+          final catData = dc['categories'] as Map<String, dynamic>?;
+          return (catData?['name'] as String?) ?? '';
+        })
+        .where((n) => n.isNotEmpty)
+        .toList();
+
+    final rawIngredients = _parseIngredients(map['ingredients']);
+
+    return DishDetail(
+      id:               map['id'] as int,
+      dishId:           map['dish_id'] as int,
+      cuisineId:        (dishData['cuisine_id'] as int?) ?? 0,
+      dishName:         (dishData['name'] as String?) ?? '',
+      thumbnailUrl:     (dishData['thumbnail_url'] as String?) ?? '',
+      cuisineName:      (cuisineData?['name'] as String?) ?? '',
+      categories:       categories,
+      shortDescription: (dishData['short_description'] as String?) ?? '',
+      fullDescription:  (map['full_description'] as String?) ?? '',
+      ingredients: rawIngredients.map((e) {
+        if (e is Map<String, dynamic>) return DishIngredient.fromMap(e);
+        return DishIngredient(name: e.toString(), measure: '');
+      }).toList(),
+      preparation:  (map['preparation'] as String?) ?? '',
+      videoUrlEn:   map['video_url_en'] as String?,
+      videoUrlHi:   map['video_url_hi'] as String?,
+      videoUrlTa:   map['video_url_ta'] as String?,
+      videoUrlMl:   map['video_url_ml'] as String?,
+      videoUrlAr:   map['video_url_ar'] as String?,
+      videoUrlDe:   map['video_url_de'] as String?,
+      videoUrlFr:   map['video_url_fr'] as String?,
+      videoUrlEs:   map['video_url_es'] as String?,
+      videoUrlIt:   map['video_url_it'] as String?,
+      videoUrlZh:   map['video_url_zh'] as String?,
+    );
+  }
+
+  /// Safely parse the `ingredients` field which may arrive as a JSONB List
+  /// (direct from Supabase) or a JSON String (legacy).
+  static List<dynamic> _parseIngredients(dynamic raw) {
+    if (raw == null) return [];
+    if (raw is List) return raw;
+    if (raw is String) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) return decoded;
+      } catch (_) {}
+    }
+    return [];
+  }
 }

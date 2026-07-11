@@ -1,4 +1,4 @@
-package com.athul.recipe_quest
+package com.atsIOSDev.recipeQuest
 
 import io.flutter.embedding.android.FlutterActivity
 
